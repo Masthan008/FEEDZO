@@ -18,7 +18,7 @@ class OrderDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(order.id),
+        title: Text('Order #${order.id.length > 8 ? order.id.substring(order.id.length - 8).toUpperCase() : order.id.toUpperCase()}'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -282,37 +282,45 @@ class OrderDetailScreen extends StatelessWidget {
             if (order.status == OrderStatus.preparing)
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => context.read<OrderProvider>().updateStatus(
-                    orderId,
-                    OrderStatus.picked,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    minimumSize: const Size(0, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Mark as Ready'),
-                ),
-              ),
-            if (order.status == OrderStatus.picked)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => context.read<OrderProvider>().updateStatus(
-                    orderId,
-                    OrderStatus.delivered,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(0, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Mark as Delivered'),
-                ),
+                child: order.driverId == null
+                    ? Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: AppColors.warning.withOpacity(0.3)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.hourglass_empty,
+                                size: 18, color: AppColors.warning),
+                            SizedBox(width: 8),
+                            Text(
+                              'Waiting for driver assignment',
+                              style: TextStyle(
+                                  color: AppColors.warning,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: () =>
+                            context.read<OrderProvider>().updateStatus(
+                          orderId,
+                          OrderStatus.ready,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          minimumSize: const Size(0, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Mark as Ready'),
+                      ),
               ),
           ],
         ),

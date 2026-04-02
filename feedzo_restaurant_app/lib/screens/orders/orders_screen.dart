@@ -7,6 +7,7 @@ import '../../models/order_model.dart';
 import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import 'order_detail_screen.dart';
+import 'driver_tracking_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -78,6 +79,8 @@ class _OrdersScreenState extends State<OrdersScreen>
         title: const Text('Orders'),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: [
             const Tab(text: 'All'),
             Tab(
@@ -451,6 +454,38 @@ class _OrderCard extends StatelessWidget {
                             color: AppColors.info.withValues(alpha: 0.8),
                             fontWeight: FontWeight.w500,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DriverTrackingScreen(order: order),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.info.withValues(alpha: 0.1),
+                            borderRadius: AppShape.round,
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.map_rounded, size: 14, color: AppColors.info),
+                              SizedBox(width: 4),
+                              Text(
+                                'Track',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.info,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -527,25 +562,47 @@ class _OrderCard extends StatelessWidget {
               ],
               if (order.status == OrderStatus.preparing) ...[
                 const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      provider.updateStatus(order.id, OrderStatus.ready);
-                    },
-                    icon: const Icon(Icons.check_circle_outline_rounded,
-                        size: 18),
-                    label: const Text('Mark as Ready'),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(0, 46),
-                      backgroundColor: AppColors.info,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppShape.medium,
+                if (order.driverId == null)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.08),
+                      borderRadius: AppShape.medium,
+                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.hourglass_empty_rounded, size: 16, color: AppColors.warning),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Waiting for driver assignment',
+                            style: TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        provider.updateStatus(order.id, OrderStatus.ready);
+                      },
+                      icon: const Icon(Icons.check_circle_outline_rounded,
+                          size: 18),
+                      label: const Text('Mark as Ready'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 46),
+                        backgroundColor: AppColors.info,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppShape.medium,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ],
           ),

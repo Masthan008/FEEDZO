@@ -22,6 +22,7 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   int _selectedAddress = 0;
   bool _orderPlaced = false;
+  String _paymentType = 'cod'; // 'cod' or 'online'
 
   Future<void> _placeOrder(BuildContext context) async {
     final auth = context.read<AuthProvider>();
@@ -55,6 +56,7 @@ class _CartScreenState extends State<CartScreen> {
       address: addresses[_selectedAddress],
       status: OrderStatus.placed,
       createdAt: DateTime.now(),
+      paymentType: _paymentType,
     );
 
     try {
@@ -338,6 +340,134 @@ class _CartScreenState extends State<CartScreen> {
                   const SizedBox(height: 16),
                   // Bill summary
                   _BillSummary(cart: cart),
+                  const SizedBox(height: 16),
+                  // Payment method selector
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: AppShape.large,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Payment Method',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(
+                                    () => _paymentType = 'cod'),
+                                child: AnimatedContainer(
+                                  duration:
+                                      const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: _paymentType == 'cod'
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.1)
+                                        : AppColors.surfaceVariant,
+                                    borderRadius: AppShape.medium,
+                                    border: Border.all(
+                                      color: _paymentType == 'cod'
+                                          ? AppColors.primary
+                                          : AppColors.border,
+                                      width:
+                                          _paymentType == 'cod' ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.money_rounded,
+                                        color: _paymentType == 'cod'
+                                            ? AppColors.primary
+                                            : AppColors.textHint,
+                                        size: 28,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Cash on\nDelivery',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: _paymentType == 'cod'
+                                              ? AppColors.primary
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(
+                                    () => _paymentType = 'online'),
+                                child: AnimatedContainer(
+                                  duration:
+                                      const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: _paymentType == 'online'
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.1)
+                                        : AppColors.surfaceVariant,
+                                    borderRadius: AppShape.medium,
+                                    border: Border.all(
+                                      color: _paymentType == 'online'
+                                          ? AppColors.primary
+                                          : AppColors.border,
+                                      width: _paymentType == 'online'
+                                          ? 2
+                                          : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.account_balance_wallet_rounded,
+                                        color: _paymentType == 'online'
+                                            ? AppColors.primary
+                                            : AppColors.textHint,
+                                        size: 28,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Online\nPayment',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: _paymentType == 'online'
+                                              ? AppColors.primary
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -356,7 +486,9 @@ class _CartScreenState extends State<CartScreen> {
               ],
             ),
             child: AppButton(
-              label: 'Place Order • ₹${cart.total.toStringAsFixed(0)}',
+              label: _paymentType == 'cod'
+                  ? 'Place Order (COD) • ₹${cart.total.toStringAsFixed(0)}'
+                  : 'Pay Online • ₹${cart.total.toStringAsFixed(0)}',
               onPressed: () => _placeOrder(context),
               isLoading: orderProvider.isPlacing,
               width: double.infinity,

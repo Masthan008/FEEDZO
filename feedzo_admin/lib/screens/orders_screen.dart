@@ -177,8 +177,8 @@ class _OrderRow extends StatelessWidget {
           Text('#$shortId', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary)),
           if (isDelayed) ...[const SizedBox(width: 4), const Icon(Icons.warning_rounded, color: AppColors.error, size: 14)],
         ])),
-        Expanded(flex: 3, child: Text(customerId.length > 8 ? '...${customerId.substring(customerId.length - 8)}' : customerId,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis)),
+        Expanded(flex: 3, child: Text(d['customerName'] as String? ?? 'Unknown',
+            style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
         Expanded(flex: 3, child: Text(restaurantName, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
         Expanded(flex: 2, child: Text('Rs.${totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
         Expanded(flex: 2, child: Container(

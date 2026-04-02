@@ -23,7 +23,9 @@ service cloud.firestore {
     // ── USERS ──────────────────────────────────────────
     match /users/{userId} {
       allow read: if isAuth() && (uid() == userId || isAdmin());
-      allow create: if isAuth() && uid() == userId;
+      allow create: if isAuth() &&
+        uid() == userId &&
+        request.resource.data.role in ['customer','restaurant','driver'];
       allow update: if isAuth() && (uid() == userId || isAdmin());
     }
 
@@ -35,15 +37,21 @@ service cloud.firestore {
 
       allow update: if isAuth() && (
         isAdmin() ||
-        uid() == restaurantId
+        resource.data.ownerId == uid()
       );
     }
 
     // ── ITEMS (MENU) ───────────────────────────────────
     match /items/{itemId} {
       allow read: if true; // Customers need to see menu items
-      allow create: if isAuth() && (request.resource.data.restaurantId == uid() || isAdmin());
-      allow update, delete: if isAuth() && (resource.data.restaurantId == uid() || isAdmin());
+      allow create: if isAuth() && (
+        isAdmin() ||
+        get(/databases/$(database)/documents/restaurants/$(request.resource.data.restaurantId)).data.ownerId == uid()
+      );
+      allow update, delete: if isAuth() && (
+        isAdmin() ||
+        get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId == uid()
+      );
     }
 
     // ── DRIVERS ────────────────────────────────────────
@@ -54,19 +62,21 @@ service cloud.firestore {
 
       allow update: if isAuth() && (
         isAdmin() ||
-        uid() == driverId
+        driverId == uid() ||
+        isRestaurant() // allow restaurant to update driver status to busy during auto-assignment
       );
     }
 
     // ── ORDERS ─────────────────────────────────────────
     match /orders/{orderId} {
 
-      // READ ACCESS
+      // READ ACCESS — allow drivers to read unassigned preparing/ready orders
       allow read: if isAuth() && (
         isAdmin() ||
         resource.data.customerId == uid() ||
         resource.data.restaurantId == uid() ||
-        (resource.data.driverId != null && resource.data.driverId == uid())
+        (isDriver() && resource.data.driverId == uid()) ||
+        (isDriver() && resource.data.status in ['placed', 'preparing', 'ready'])
       );
 
       // CREATE (CUSTOMER ONLY + APPROVED)
@@ -74,33 +84,34 @@ service cloud.firestore {
         isCustomer() &&
         isApproved();
 
-      // UPDATE CONTROL (STRICT)
+      // UPDATE CONTROL
       allow update: if isAuth() && (
 
         // ADMIN: full control
         isAdmin() ||
 
-        // CUSTOMER: can cancel
+        // CUSTOMER: can cancel, can rate
         (
            isCustomer() &&
            resource.data.customerId == uid() &&
-           request.resource.data.diff(resource.data).changedKeys().hasOnly(['status'])
+           request.resource.data.diff(resource.data).changedKeys()
+             .hasOnly(['status', 'rating', 'ratingComment', 'updatedAt'])
         ) ||
 
-        // RESTAURANT: update status
+        // RESTAURANT: update status, prepTime, acceptedAt, driverId, driverName, driverPhone
         (
           isRestaurant() &&
           resource.data.restaurantId == uid() &&
           request.resource.data.diff(resource.data).changedKeys()
-            .hasOnly(['status', 'updatedAt'])
+            .hasOnly(['status', 'prepTime', 'acceptedAt', 'driverId', 'driverName', 'driverPhone', 'updatedAt'])
         ) ||
 
-        // DRIVER: update status
+        // DRIVER CLAIM + UPDATE
         (
           isDriver() &&
-          resource.data.driverId == uid() &&
-          request.resource.data.diff(resource.data).changedKeys()
-            .hasOnly(['status', 'updatedAt'])
+          (
+            (!('driverId' in resource.data) || resource.data.driverId == null) ? request.resource.data.driverId == uid() : resource.data.driverId == uid()
+          )
         )
       );
     }
@@ -125,7 +136,17 @@ service cloud.firestore {
         resource.data.restaurantId == uid()
       );
 
-      allow write: if isAuth() && isAdmin();
+      // Restaurants can create earning transactions, admins can do anything
+      allow create: if isAuth() && (isAdmin() || isRestaurant());
+      allow update, delete: if isAuth() && isAdmin();
+    }
+
+    // ── ALERTS ──────────────────────────────────────────
+    match /alerts/{alertId} {
+      allow read: if isAuth() && isAdmin();
+      // Any authenticated user can create alerts (order placement, etc.)
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && isAdmin();
     }
 
     // ── NOTIFICATIONS (ONESIGNAL STORAGE) ──────────────

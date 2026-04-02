@@ -9,6 +9,9 @@ class OrderProvider extends ChangeNotifier {
   StreamSubscription? _subscription;
   bool _isLoading = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  String? _restaurantId;
+  // Track known order IDs to detect new ones
+  Set<String> _knownOrderIds = {};
 
   List<OrderModel> get orders => _orders;
   bool get isLoading => _isLoading;
@@ -43,65 +46,142 @@ class OrderProvider extends ChangeNotifier {
     return Map.fromEntries(sortedEntries);
   }
 
-  Future<void> _playSound() async {
+  Future<void> _playNewOrderSound() async {
     try {
-      await _audioPlayer.play(AssetSource('sounds/new_order.mp3'));
+      await _audioPlayer.stop();
+      await _audioPlayer.setSource(AssetSource('sounds/new_order.mp3'));
+      await _audioPlayer.resume();
+      debugPrint('[OrderProvider] Playing new order sound');
     } catch (e) {
-      debugPrint('Error playing sound: $e');
+      debugPrint('[OrderProvider] Error playing sound: $e');
     }
   }
 
   void init(String restaurantId) {
     _subscription?.cancel();
+    _restaurantId = restaurantId;
     _isLoading = true;
+    _knownOrderIds.clear();
     notifyListeners();
 
     _subscription = FirebaseFirestore.instance
         .collection('orders')
         .where('restaurantId', isEqualTo: restaurantId)
         .snapshots()
-        .listen((snap) {
-          final newOrders = snap.docs
-              .map((doc) => OrderModel.fromFirestore(doc))
-              .toList();
-          newOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        .listen(
+      (snap) {
+        final newOrders = snap.docs
+            .map((doc) => OrderModel.fromFirestore(doc))
+            .toList();
+        newOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-          // Check for new orders to play sound
-          if (_orders.isNotEmpty && newOrders.length > _orders.length) {
-            final newest = newOrders.first;
-            if (newest.status == OrderStatus.placed) {
-              _playSound();
+        // Detect truly new orders (not just status changes)
+        if (_knownOrderIds.isNotEmpty) {
+          for (final order in newOrders) {
+            if (!_knownOrderIds.contains(order.id) &&
+                order.status == OrderStatus.placed) {
+              _playNewOrderSound();
+              break;
             }
           }
+        }
 
-          _orders = newOrders;
-          _isLoading = false;
-          notifyListeners();
-        });
+        // Update known order IDs
+        _knownOrderIds = newOrders.map((o) => o.id).toSet();
+
+        _orders = newOrders;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (e) {
+        debugPrint('[OrderProvider] Stream error: $e');
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> updateStatus(String orderId, OrderStatus status) async {
     try {
-      await FirebaseFirestore.instance.collection('orders').doc(orderId).update(
-        {'status': status.name},
-      );
+      final batch = FirebaseFirestore.instance.batch();
+      final orderRef =
+          FirebaseFirestore.instance.collection('orders').doc(orderId);
+
+      batch.update(orderRef, {'status': status.name});
+
+      // When order is delivered, credit the restaurant wallet (no commission)
+      if (status == OrderStatus.delivered && _restaurantId != null) {
+        final order = _orders.firstWhere(
+          (o) => o.id == orderId,
+          orElse: () => _orders.first,
+        );
+
+        // Credit full amount to restaurant wallet
+        final restRef = FirebaseFirestore.instance
+            .collection('restaurants')
+            .doc(_restaurantId);
+        batch.update(restRef, {
+          'walletBalance': FieldValue.increment(order.totalAmount),
+        });
+
+        // Create transaction record (no commission)
+        final txnRef =
+            FirebaseFirestore.instance.collection('transactions').doc();
+        batch.set(txnRef, {
+          'restaurantId': _restaurantId,
+          'orderId': orderId,
+          'description': 'Order #${orderId.length > 8 ? orderId.substring(orderId.length - 8).toUpperCase() : orderId}',
+          'amount': order.totalAmount,
+          'date': FieldValue.serverTimestamp(),
+          'type': 'earning',
+          'status': 'completed',
+        });
+      }
+
+      await batch.commit();
     } catch (e) {
-      debugPrint('Error updating order status: $e');
+      debugPrint('[OrderProvider] Error updating order status: $e');
     }
   }
 
   Future<void> acceptOrder(String orderId, int prepTime) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .update({
-            'status': OrderStatus.preparing.name,
-            'prepTime': prepTime,
-            'acceptedAt': FieldValue.serverTimestamp(),
-          });
+      final batch = FirebaseFirestore.instance.batch();
+      final orderRef = FirebaseFirestore.instance.collection('orders').doc(orderId);
+      
+      final dbData = <String, dynamic>{
+        'status': OrderStatus.preparing.name,
+        'prepTime': prepTime,
+        'acceptedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Quick logic: auto assign driver if online
+      final drivers = await FirebaseFirestore.instance
+          .collection('drivers')
+          .where('status', isEqualTo: 'online')
+          .get();
+
+      if (drivers.docs.isNotEmpty) {
+        final doc = drivers.docs.first;
+        final driverId = doc.id;
+        final data = doc.data();
+        
+        dbData['driverId'] = driverId;
+        dbData['driverName'] = data['name'] ?? 'Driver';
+        dbData['driverPhone'] = data['phone'] ?? '';
+
+        final driverRef = FirebaseFirestore.instance.collection('drivers').doc(driverId);
+        batch.update(driverRef, {
+          'status': 'busy',
+          'currentOrderId': orderId,
+        });
+      }
+
+      batch.update(orderRef, dbData);
+      await batch.commit();
+      
     } catch (e) {
-      debugPrint('Error accepting order: $e');
+      debugPrint('[OrderProvider] Error accepting order: $e');
     }
   }
 

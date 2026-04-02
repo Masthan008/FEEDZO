@@ -6,6 +6,7 @@ import '../../providers/order_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../data/models/order_model.dart';
 import 'order_tracking_screen.dart';
+import 'rate_order_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -292,7 +293,32 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (!isActive)
+                if (!isActive) ...[
+                  if (order.status == OrderStatus.delivered &&
+                      order.rating == null)
+                    TextButton.icon(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RateOrderScreen(
+                              orderId: order.id,
+                              restaurantName: order.restaurantName,
+                            ),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: const Color(0xFFFBBF24),
+                      ),
+                      icon: const Icon(Icons.star_rounded, size: 16),
+                      label: const Text(
+                        'Rate',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   TextButton.icon(
                     onPressed: () {
                       HapticFeedback.mediumImpact();
@@ -313,6 +339,7 @@ class _OrderCard extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
+                ],
                 if (isActive)
                   TextButton(
                     onPressed: () {

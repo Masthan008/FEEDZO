@@ -370,6 +370,90 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
+
+                  // ── Available Orders (Pool) ──
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Available Orders',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Accept orders to start delivering',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('orders')
+                                .where('status', whereIn: ['placed', 'preparing', 'ready'])
+                                .snapshots(),
+                            builder: (context, availSnap) {
+                              final allDocs = availSnap.data?.docs ?? [];
+                              final availDocs = allDocs.where((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                return data['driverId'] == null;
+                              }).toList();
+
+                              if (availDocs.isEmpty) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: AppShape.large,
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: const Column(
+                                    children: [
+                                      Icon(
+                                        Icons.search_off_rounded,
+                                        size: 32,
+                                        color: AppColors.textHint,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'No orders available',
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              return Column(
+                                children: availDocs.map((doc) {
+                                  final d = doc.data() as Map<String, dynamic>;
+                                  return _AvailableOrderTile(
+                                    orderId: doc.id,
+                                    data: d,
+                                    driverUid: _uid,
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -661,6 +745,140 @@ class _ActiveOrderCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AvailableOrderTile extends StatefulWidget {
+  final String orderId;
+  final Map<String, dynamic> data;
+  final String driverUid;
+
+  const _AvailableOrderTile({
+    required this.orderId,
+    required this.data,
+    required this.driverUid,
+  });
+
+  @override
+  State<_AvailableOrderTile> createState() => _AvailableOrderTileState();
+}
+
+class _AvailableOrderTileState extends State<_AvailableOrderTile> {
+  bool _accepting = false;
+
+  Future<void> _accept() async {
+    setState(() => _accepting = true);
+    try {
+      final driverDoc = await FirebaseFirestore.instance
+          .collection('drivers')
+          .doc(widget.driverUid)
+          .get();
+      final dd = driverDoc.data() as Map<String, dynamic>? ?? {};
+
+      final batch = FirebaseFirestore.instance.batch();
+      batch.update(
+        FirebaseFirestore.instance.collection('orders').doc(widget.orderId),
+        {
+          'driverId': widget.driverUid,
+          'driverName': dd['name'] ?? 'Driver',
+          'driverPhone': dd['phone'] ?? '',
+          'status': 'preparing',
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
+      batch.update(
+        FirebaseFirestore.instance.collection('drivers').doc(widget.driverUid),
+        {'status': 'busy', 'currentOrderId': widget.orderId},
+      );
+      await batch.commit();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order accepted! 🚀'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+        );
+        setState(() => _accepting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final restaurantName = widget.data['restaurantName'] as String? ?? 'Restaurant';
+    final totalAmount = ((widget.data['totalAmount'] as num?) ?? 0).toDouble();
+    final paymentType = widget.data['paymentType'] as String? ?? 'online';
+    final shortId = widget.orderId.length > 6
+        ? widget.orderId.substring(widget.orderId.length - 6).toUpperCase()
+        : widget.orderId.toUpperCase();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.large,
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        boxShadow: AppShadows.subtle,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: AppShape.medium,
+            ),
+            child: const Icon(Icons.restaurant_rounded, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  restaurantName,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '#$shortId · ₹${totalAmount.toStringAsFixed(0)} · ${paymentType.toUpperCase()}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 36,
+            child: ElevatedButton(
+              onPressed: _accepting ? null : _accept,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: AppShape.round),
+              ),
+              child: _accepting
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Accept', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
             ),
           ),
         ],

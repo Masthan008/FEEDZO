@@ -278,7 +278,7 @@ class DriverDailySummary {
       date: (map['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       totalOrders: (map['totalOrders'] as num?)?.toInt() ?? 0,
       codOrders: (map['codOrders'] as num?)?.toInt() ?? 0,
-      codAmount: ((map['codAmount'] ?? 0) as num).toDouble(),
+      codAmount: ((map['codAmount'] ?? map['codCollected'] ?? 0) as num).toDouble(),
       onlineOrders: (map['onlineOrders'] as num?)?.toInt() ?? 0,
       onlineAmount: ((map['onlineAmount'] ?? 0) as num).toDouble(),
       submittedAmount: ((map['submitted'] ?? map['submittedAmount'] ?? 0) as num).toDouble(),

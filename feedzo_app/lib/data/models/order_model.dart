@@ -53,6 +53,9 @@ class Order {
   final String address;
   final OrderStatus status;
   final DateTime createdAt;
+  final String paymentType; // 'cod' or 'online'
+  final double? rating;
+  final String? ratingComment;
 
   double get total => totalAmount;
 
@@ -72,6 +75,9 @@ class Order {
     required this.address,
     required this.status,
     required this.createdAt,
+    this.paymentType = 'cod',
+    this.rating,
+    this.ratingComment,
   });
 
   factory Order.fromMap(Map<String, dynamic> map, String id) {
@@ -96,6 +102,9 @@ class Order {
         orElse: () => OrderStatus.placed,
       ),
       createdAt: (map['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
+      paymentType: map['paymentType'] as String? ?? 'cod',
+      rating: (map['rating'] as num?)?.toDouble(),
+      ratingComment: map['ratingComment'] as String?,
     );
   }
 
@@ -116,6 +125,9 @@ class Order {
       'address': address,
       'status': status.name,
       'createdAt': createdAt,
+      'paymentType': paymentType,
+      if (rating != null) 'rating': rating,
+      if (ratingComment != null) 'ratingComment': ratingComment,
     };
   }
 

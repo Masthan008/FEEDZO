@@ -1,34 +1,49 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../data/models/restaurant_model.dart';
 import '../services/firestore_service.dart';
 
 class RestaurantProvider extends ChangeNotifier {
   List<Restaurant> _restaurants = [];
   bool _isLoading = true;
+  String? _error;
   String _searchQuery = '';
   bool _vegOnly = false;
   double _minRating = 0;
+  StreamSubscription? _sub;
 
   List<Restaurant> get restaurants => _filtered;
   bool get isLoading => _isLoading;
+  String? get error => _error;
   String get searchQuery => _searchQuery;
   bool get vegOnly => _vegOnly;
   double get minRating => _minRating;
 
   RestaurantProvider() {
-    _init();
-  }
-
-  void _init() {
     loadRestaurants();
   }
 
   void loadRestaurants() {
-    FirestoreService.watchOpenRestaurants().listen((data) {
-      _restaurants = data;
-      _isLoading = false;
-      notifyListeners();
-    });
+    // Cancel any existing subscription to avoid duplicates
+    _sub?.cancel();
+    _isLoading = true;
+    _error = null;
+
+    _sub = FirestoreService.watchOpenRestaurants().listen(
+      (data) {
+        _restaurants = data;
+        _isLoading = false;
+        _error = null;
+        debugPrint('[RestaurantProvider] Loaded ${data.length} restaurants');
+        notifyListeners();
+      },
+      onError: (e) {
+        debugPrint('[RestaurantProvider] Stream error: $e');
+        _isLoading = false;
+        _error = e.toString();
+        notifyListeners();
+      },
+    );
   }
 
   List<Restaurant> get _filtered {
@@ -77,5 +92,10 @@ class RestaurantProvider extends ChangeNotifier {
       return null;
     }
   }
-}
 
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+}

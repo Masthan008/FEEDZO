@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
@@ -28,9 +29,10 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
+  // Available orders: status is 'placed' or 'ready', no driver assigned yet
   Stream<QuerySnapshot> _availableStream() => FirebaseFirestore.instance
       .collection('orders')
-      .where('status', whereIn: ['preparing', 'ready'])
+      .where('status', whereIn: ['placed', 'preparing', 'ready'])
       .snapshots();
 
   Stream<QuerySnapshot> _activeStream() => FirebaseFirestore.instance
@@ -61,7 +63,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       body: TabBarView(
         controller: _tab,
         children: [
-          _OrderList(stream: _availableStream(), label: 'Available', filterDriverId: true),
+          _AvailableOrderList(uid: _uid),
           _OrderList(stream: _activeStream(), label: 'Active'),
           _OrderList(stream: _completedStream(), label: 'Completed'),
         ],
@@ -70,11 +72,342 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 }
 
+// ── Available Orders tab with Accept button ─────────────────────────
+class _AvailableOrderList extends StatelessWidget {
+  final String uid;
+  const _AvailableOrderList({required this.uid});
+
+  Stream<QuerySnapshot> get _stream => FirebaseFirestore.instance
+      .collection('orders')
+      .where('status', whereIn: ['placed', 'preparing', 'ready'])
+      .snapshots();
+
+  Future<void> _acceptOrder(BuildContext context, String orderId) async {
+    try {
+      // Get driver info
+      final driverDoc = await FirebaseFirestore.instance
+          .collection('drivers')
+          .doc(uid)
+          .get();
+      final driverData = driverDoc.data() as Map<String, dynamic>? ?? {};
+      final driverName = driverData['name'] as String? ?? 'Driver';
+      final driverPhone = driverData['phone'] as String? ?? '';
+
+      final batch = FirebaseFirestore.instance.batch();
+
+      // Update order with driver info
+      batch.update(
+        FirebaseFirestore.instance.collection('orders').doc(orderId),
+        {
+          'driverId': uid,
+          'driverName': driverName,
+          'driverPhone': driverPhone,
+          'status': 'preparing',
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
+
+      // Update driver status to busy
+      batch.update(
+        FirebaseFirestore.instance.collection('drivers').doc(uid),
+        {
+          'status': 'busy',
+          'currentOrderId': orderId,
+        },
+      );
+
+      await batch.commit();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order accepted! 🚀'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to accept: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _stream,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snap.data!.docs.isEmpty) {
+          return const Center(child: Text("No data available"));
+        }
+        // Filter only unassigned orders (no driverId)
+        var docs = snap.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['driverId'] == null;
+        }).toList();
+
+        // Sort by createdAt descending
+        docs.sort((a, b) {
+          final ad = a.data() as Map<String, dynamic>;
+          final bd = b.data() as Map<String, dynamic>;
+          final ac = ad['createdAt'] as Timestamp?;
+          final bc = bd['createdAt'] as Timestamp?;
+          if (ac == null || bc == null) return 0;
+          return bc.compareTo(ac);
+        });
+
+        if (docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.inbox_rounded,
+                    size: 48,
+                    color: AppColors.textHint,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No available orders',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'New orders will appear here',
+                  style: TextStyle(
+                    color: AppColors.textHint,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: docs.length,
+          itemBuilder: (context, i) {
+            final doc = docs[i];
+            final d = doc.data() as Map<String, dynamic>;
+            return _AvailableOrderCard(
+              orderId: doc.id,
+              data: d,
+              onAccept: () => _acceptOrder(context, doc.id),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _AvailableOrderCard extends StatelessWidget {
+  final String orderId;
+  final Map<String, dynamic> data;
+  final VoidCallback onAccept;
+  const _AvailableOrderCard({
+    required this.orderId,
+    required this.data,
+    required this.onAccept,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final restaurantName = data['restaurantName'] as String? ?? 'Restaurant';
+    final totalAmount = ((data['totalAmount'] as num?) ?? 0).toDouble();
+    final paymentType = data['paymentType'] as String? ?? 'online';
+    final customerName = data['customerName'] as String? ?? 'Customer';
+    final address = data['address'] as String? ?? 'No address';
+    final shortId = orderId.length > 6
+        ? orderId.substring(orderId.length - 6).toUpperCase()
+        : orderId.toUpperCase();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.large,
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: AppShape.medium,
+                  ),
+                  child: const Icon(
+                    Icons.restaurant_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        restaurantName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '#$shortId',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: paymentType == 'cod'
+                        ? Colors.orange.shade50
+                        : AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: AppShape.round,
+                  ),
+                  child: Text(
+                    paymentType == 'cod' ? 'COD' : 'PAID',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: paymentType == 'cod'
+                          ? Colors.orange.shade700
+                          : AppColors.success,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: AppColors.border),
+            ),
+            // Customer & delivery info
+            Row(
+              children: [
+                const Icon(Icons.person_rounded, size: 14, color: AppColors.textHint),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    customerName,
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.location_on_rounded, size: 14, color: AppColors.textHint),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    address,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Amount + Accept button
+            Row(
+              children: [
+                Text(
+                  '₹${totalAmount.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                  ),
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    HapticFeedback.heavyImpact();
+                    onAccept();
+                  },
+                  icon: const Icon(Icons.check_rounded, size: 18),
+                  label: const Text('Accept Order'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppShape.round,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Active/Completed Orders tab ─────────────────────────────────────
 class _OrderList extends StatelessWidget {
   final Stream<QuerySnapshot> stream;
   final String label;
-  final bool filterDriverId;
-  const _OrderList({required this.stream, required this.label, this.filterDriverId = false});
+  const _OrderList({required this.stream, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -84,16 +417,15 @@ class _OrderList extends StatelessWidget {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        var docs = snap.data?.docs ?? [];
-        
-        if (filterDriverId) {
-           docs = docs.where((doc) {
-             final data = doc.data() as Map<String, dynamic>;
-             return data['driverId'] == null;
-           }).toList();
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
         }
-        
-        // Sorting locally to bypass Firestore index requirements
+        if (snap.data!.docs.isEmpty) {
+          return const Center(child: Text("No data available"));
+        }
+        var docs = snap.data!.docs;
+
+        // Sort locally to bypass Firestore index requirements
         docs.sort((a, b) {
            final ad = a.data() as Map<String, dynamic>;
            final bd = b.data() as Map<String, dynamic>;

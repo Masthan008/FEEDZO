@@ -86,14 +86,16 @@ class _RestaurantCardState extends State<RestaurantCard>
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(AppShape.radiusLarge)),
-                      child: CachedNetworkImage(
-                        imageUrl: r.firstImage,
-                        height: imageHeight,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => _ImagePlaceholder(height: imageHeight),
-                        errorWidget: (_, __, ___) => _ImageError(height: imageHeight),
-                      ),
+                      child: r.firstImage.isEmpty
+                          ? _ImagePlaceholder(height: imageHeight)
+                          : CachedNetworkImage(
+                              imageUrl: r.firstImage,
+                              height: imageHeight,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => _ImagePlaceholder(height: imageHeight),
+                              errorWidget: (_, __, ___) => _ImageError(height: imageHeight),
+                            ),
                     ),
                   ),
                   // Closed overlay
@@ -118,67 +120,54 @@ class _RestaurantCardState extends State<RestaurantCard>
                         ),
                       ),
                     ),
-                  // Tags (top-left)
+                  // Top-Left Offer Badge
                   Positioned(
                     top: 12,
-                    left: 12,
-                    child: Row(
-                      children: r.tags.map((tag) => _Tag(tag)).toList(),
-                    ),
-                  ),
-                  // Delivery fee badge (bottom-right)
-                  if (r.deliveryFee == 0)
-                    Positioned(
-                      bottom: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: AppShape.small,
+                    left: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(8),
+                          bottomRight: Radius.circular(8),
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.delivery_dining_rounded,
-                                color: Colors.white, size: 14),
-                            SizedBox(width: 4),
-                            Text(
-                              'Free Delivery',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                      ),
+                      child: Text(
+                        r.tags.isNotEmpty ? r.tags.first.toUpperCase() : '20% OFF',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
-                  // Delivery time badge (bottom-left)
+                  ),
+                  
+                  // Bottom-Left Rating Badge (overlaid on image)
                   Positioned(
-                    bottom: 12,
+                    bottom: 8,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: AppShape.small,
+                        color: r.rating >= 4.0 ? Colors.green.shade600 : Colors.orange.shade600,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.access_time_rounded,
-                              color: Colors.white, size: 12),
+                          const Icon(Icons.star_rounded, color: Colors.white, size: 12),
                           const SizedBox(width: 4),
                           Text(
-                            '${r.deliveryTime} min',
+                            '${r.rating}',
                             style: const TextStyle(
                               color: Colors.white,
+                              fontWeight: FontWeight.w900,
                               fontSize: 11,
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -189,101 +178,52 @@ class _RestaurantCardState extends State<RestaurantCard>
               ),
               // ── Info Section ──
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      r.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            r.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
+                        Icon(Icons.bolt, color: Colors.green.shade600, size: 16),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${r.deliveryTime - 5}-${r.deliveryTime + 5} mins',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
                           ),
                         ),
-                        if (r.isVeg)
+                        if (r.deliveryFee == 0) ...[
+                          const SizedBox(width: 12),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.success.withValues(alpha: 0.1),
+                              color: Colors.blue.shade50,
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: AppColors.success),
                             ),
                             child: const Text(
-                              'VEG',
+                              'FREE DELIVERY',
                               style: TextStyle(
-                                color: AppColors.success,
-                                fontSize: 10,
+                                color: Colors.blue,
+                                fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      r.cuisine,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        // Rating badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: r.rating >= 4.0
-                                ? AppColors.success
-                                : AppColors.warning,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.star_rounded,
-                                  color: Colors.white, size: 12),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${r.rating}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Icon(Icons.delivery_dining_rounded,
-                            color: AppColors.textSecondary, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          r.deliveryFee == 0
-                              ? 'Free'
-                              : '₹${r.deliveryFee.toInt()}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '₹${r.minOrder.toInt()} min order',
-                          style: const TextStyle(
-                            color: AppColors.textHint,
-                            fontSize: 11,
-                          ),
-                        ),
+                        ]
                       ],
                     ),
                   ],

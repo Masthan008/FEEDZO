@@ -8,12 +8,14 @@ import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/restaurant_provider.dart';
+import 'providers/location_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/cart/cart_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/orders/order_tracking_screen.dart';
 
+import 'package:flutter/foundation.dart';
 import 'services/onesignal_service.dart';
 
 /// Global navigator key — used by OneSignal for deep-link navigation.
@@ -22,7 +24,9 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await OneSignalService.init();
+  if (!kIsWeb) {
+    await OneSignalService.init();
+  }
   runApp(const FeedzoApp());
 }
 
@@ -37,6 +41,7 @@ class FeedzoApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => RestaurantProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
       ],
       child: MaterialApp(
         title: 'Feedzo',
@@ -92,8 +97,10 @@ class _AuthGate extends StatelessWidget {
           );
         }
         if (snap.hasData && snap.data != null) {
-          OneSignalService.loginUser(snap.data!.uid);
-          OneSignalService.setRole('customer');
+          if (!kIsWeb) {
+            OneSignalService.loginUser(snap.data!.uid);
+            OneSignalService.setRole('customer');
+          }
           return const MainShell();
         }
         return const LoginScreen();

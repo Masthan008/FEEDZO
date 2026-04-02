@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
+import 'package:flutter/foundation.dart';
 import '../data/models/restaurant_model.dart';
 import '../data/models/order_model.dart';
 import '../data/models/user_model.dart';
@@ -37,14 +38,20 @@ class FirestoreService {
   static Stream<List<Restaurant>> watchOpenRestaurants() => restaurants
       .snapshots()
       .map(
-        (snap) => snap.docs
-            .map(
-              (doc) => Restaurant.fromMap(
+        (snap) {
+          final List<Restaurant> result = [];
+          for (final doc in snap.docs) {
+            try {
+              result.add(Restaurant.fromMap(
                 doc.data() as Map<String, dynamic>,
                 doc.id,
-              ),
-            )
-            .toList(),
+              ));
+            } catch (e) {
+              debugPrint('[FirestoreService] Skipping bad restaurant doc ${doc.id}: $e');
+            }
+          }
+          return result;
+        },
       );
 
   static Stream<List<MenuItem>> watchRestaurantMenu(String restaurantId) =>
@@ -67,6 +74,23 @@ class FirestoreService {
     final doc = await orders.add(
       order.toMap()..['createdAt'] = FieldValue.serverTimestamp(),
     );
+
+    // Create an alert for admin dashboard
+    try {
+      await _db.collection('alerts').add({
+        'type': 'orderAlert',
+        'title': 'New Order Placed',
+        'message': '${order.customerName} placed an order at ${order.restaurantName} — ₹${order.totalAmount.toStringAsFixed(0)} (${order.paymentType.toUpperCase()})',
+        'orderId': doc.id,
+        'customerId': order.customerId,
+        'restaurantId': order.restaurantId,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('[FirestoreService] Alert creation failed: $e');
+    }
+
     return doc.id;
   }
 

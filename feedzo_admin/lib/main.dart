@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
 import 'core/theme.dart';
@@ -12,8 +13,10 @@ import 'screens/auth/login_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // OneSignal init for admin web
-  OneSignal.initialize('90f7c5c6-b51f-466a-acdb-a4829b419363');
+  // OneSignal init for admin web - skip on web to prevent unsupported errors
+  if (!kIsWeb) {
+    OneSignal.initialize('90f7c5c6-b51f-466a-acdb-a4829b419363');
+  }
   runApp(const FeedzoAdminApp());
 }
 
@@ -51,9 +54,11 @@ class _AuthGate extends StatelessWidget {
         }
         // User is signed in
         if (snapshot.hasData && snapshot.data != null) {
-          // Register admin in OneSignal with admin role tag
-          OneSignal.login(snapshot.data!.uid);
-          OneSignal.User.addTagWithKey('role', 'admin');
+          // Register admin in OneSignal with admin role tag (skip on web)
+          if (!kIsWeb) {
+            OneSignal.login(snapshot.data!.uid);
+            OneSignal.User.addTagWithKey('role', 'admin');
+          }
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.read<AdminProvider>().loginWithFirebase(
               snapshot.data!.uid,

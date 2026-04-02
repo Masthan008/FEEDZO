@@ -71,14 +71,8 @@ class WalletScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 24),
                       _BalanceStat(
-                        label: 'Earnings',
+                        label: 'Total Earnings',
                         value: '₹${wallet.totalEarnings.toStringAsFixed(0)}',
-                      ),
-                      const SizedBox(width: 24),
-                      _BalanceStat(
-                        label: 'Commission',
-                        value:
-                            '₹${wallet.commissionDeducted.toStringAsFixed(0)}',
                       ),
                     ],
                   ),

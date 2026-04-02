@@ -2,6 +2,7 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import '../main.dart';
 import '../screens/orders/order_tracking_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 /// OneSignal push notification service with deep linking.
 class OneSignalService {
@@ -50,23 +51,22 @@ class OneSignalService {
     });
   }
 
-  /// Call after login — links Firebase UID to OneSignal user
   static void loginUser(String firebaseUid) {
-    OneSignal.login(firebaseUid);
+    if (!kIsWeb) OneSignal.login(firebaseUid);
   }
 
   /// Call on logout
   static void logoutUser() {
-    OneSignal.logout();
+    if (!kIsWeb) OneSignal.logout();
   }
 
   /// Add a tag for role-based targeting (e.g. role=customer)
   static void setRole(String role) {
-    OneSignal.User.addTagWithKey('role', role);
+    if (!kIsWeb) OneSignal.User.addTagWithKey('role', role);
   }
 
   /// Set external user ID for targeted push
   static void setExternalUserId(String userId) {
-    OneSignal.login(userId);
+    if (!kIsWeb) OneSignal.login(userId);
   }
 }

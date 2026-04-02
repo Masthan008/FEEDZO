@@ -33,10 +33,6 @@ class WalletProvider extends ChangeNotifier {
       .where((t) => t.type == TransactionType.earning)
       .fold(0, (s, t) => s + (t.amount));
 
-  double get commissionDeducted => _transactions
-      .where((t) => t.type == TransactionType.earning)
-      .fold(0, (s, t) => s + (t.commission ?? 0));
-
   void init(String restaurantId) {
     _subscription?.cancel();
     _walletSubscription?.cancel();

@@ -34,25 +34,29 @@ class Restaurant {
   factory Restaurant.fromMap(Map<String, dynamic> map, String id) {
     return Restaurant(
       id: id,
-      name: map['name'] ?? '',
-      imageUrl:
-          map['imageUrl'] ??
-          (map['imageUrls'] != null && (map['imageUrls'] as List).isNotEmpty
-              ? map['imageUrls'][0]
+      name: map['name']?.toString() ?? '',
+      imageUrl: map['imageUrl']?.toString() ??
+          (map['imageUrls'] is List && (map['imageUrls'] as List).isNotEmpty
+              ? map['imageUrls'][0].toString()
               : ''),
-      imageUrls: List<String>.from(map['imageUrls'] ?? []),
-      cuisine: map['cuisine'] ?? '',
-      rating: (map['rating'] ?? 0.0).toDouble(),
-      deliveryTime: map['deliveryTime'] ?? 0,
-      deliveryFee: (map['deliveryFee'] ?? 0.0).toDouble(),
-      minOrder: (map['minOrder'] ?? 0.0).toDouble(),
-      isVeg: map['isVeg'] ?? false,
-      isOpen: map['isOpen'] ?? true,
-      address: map['address'] ?? '',
-      tags: List<String>.from(map['tags'] ?? []),
-      menu: (map['menu'] as List? ?? [])
-          .map((m) => MenuItem.fromMap(m, m['id'] ?? ''))
-          .toList(),
+      imageUrls: map['imageUrls'] is List
+          ? List<String>.from(map['imageUrls'])
+          : [],
+      cuisine: map['cuisine']?.toString() ?? '',
+      rating: double.tryParse(map['rating']?.toString() ?? '0.0') ?? 0.0,
+      deliveryTime: int.tryParse(map['deliveryTime']?.toString() ?? '0') ?? 0,
+      deliveryFee: double.tryParse(map['deliveryFee']?.toString() ?? '0.0') ?? 0.0,
+      minOrder: double.tryParse(map['minOrder']?.toString() ?? '0.0') ?? 0.0,
+      isVeg: map['isVeg'] == true || map['isVeg'] == 'true',
+      isOpen: map['isOpen'] == null || map['isOpen'] == true || map['isOpen'] == 'true',
+      address: map['address']?.toString() ?? '',
+      tags: map['tags'] is List ? List<String>.from(map['tags']) : [],
+      menu: map['menu'] is List
+          ? (map['menu'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map((m) => MenuItem.fromMap(m, m['id']?.toString() ?? ''))
+              .toList()
+          : [],
     );
   }
 
@@ -109,16 +113,16 @@ class MenuItem {
   factory MenuItem.fromMap(Map<String, dynamic> map, String id) {
     return MenuItem(
       id: id,
-      restaurantId: map['restaurantId'] ?? '',
-      name: map['name'] ?? '',
-      description: map['description'] ?? '',
-      price: (map['price'] ?? 0.0).toDouble(),
-      discount: (map['discount'] ?? 0.0).toDouble(),
-      imageUrl: map['imageUrl'] ?? '',
-      isVeg: map['isVeg'] ?? false,
-      category: map['category'] ?? '',
-      isAvailable: map['isAvailable'] ?? true,
-      isBestseller: map['isBestseller'] ?? false,
+      restaurantId: map['restaurantId']?.toString() ?? '',
+      name: map['name']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
+      price: double.tryParse(map['price']?.toString() ?? '0.0') ?? 0.0,
+      discount: double.tryParse(map['discount']?.toString() ?? '0.0') ?? 0.0,
+      imageUrl: map['imageUrl']?.toString() ?? '',
+      isVeg: map['isVeg'] == true || map['isVeg'] == 'true',
+      category: map['category']?.toString() ?? '',
+      isAvailable: map['isAvailable'] == null || map['isAvailable'] == true || map['isAvailable'] == 'true',
+      isBestseller: map['isBestseller'] == true || map['isBestseller'] == 'true',
     );
   }
 

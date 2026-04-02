@@ -248,13 +248,12 @@ class AdminProvider extends ChangeNotifier {
     try { return driverSummaries.firstWhere((s) => s.driverId == driverId); } catch (_) { return null; }
   }
 
-  void recordCashSubmission(String driverId, double amount, String note) {
-    final idx = driverSummaries.indexWhere((s) => s.driverId == driverId);
-    if (idx < 0) return;
-    driverSummaries[idx].submissions.add(CashSubmission(id: 'cs${DateTime.now().millisecondsSinceEpoch}', amount: amount, submittedAt: DateTime.now(), note: note));
-    driverSummaries[idx].submittedAmount += amount;
+  Future<void> recordCashSubmission(String driverId, double amount, String note) async {
+    await AdminFirestoreService.markCashReceived(driverId, amount);
+
     final driver = drivers.firstWhere((d) => d.id == driverId, orElse: () => drivers.first);
-    final isFullySettled = driverSummaries[idx].pendingAmount <= 0;
+    final idx = driverSummaries.indexWhere((s) => s.driverId == driverId);
+    final isFullySettled = idx >= 0 ? driverSummaries[idx].pendingAmount <= amount : false;
     final history = settlementHistory[driverId] ?? [];
     if (history.isNotEmpty) {
       final todayIdx = history.indexWhere((r) => _isSameDay(r.date, DateTime.now()));

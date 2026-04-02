@@ -146,6 +146,32 @@ class ProfileScreen extends StatelessWidget {
                                       ),
                                     ],
                                   ),
+                                const SizedBox(height: 2),
+                                if (user?.dob != null && user!.dob.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.cake_outlined,
+                                          color: Colors.white70, size: 14),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        user.dob,
+                                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                const SizedBox(height: 2),
+                                if (user?.gender != null && user!.gender.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.people_outline,
+                                          color: Colors.white70, size: 14),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        user.gender,
+                                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
                               ],
                             ),
                           ),
@@ -324,6 +350,8 @@ class ProfileScreen extends StatelessWidget {
 
     final nameCtrl = TextEditingController(text: user.name);
     final phoneCtrl = TextEditingController(text: user.phone);
+    final dobCtrl = TextEditingController(text: user.dob);
+    final genderCtrl = TextEditingController(text: user.gender);
 
     showModalBottomSheet(
       context: context,
@@ -367,6 +395,23 @@ class ProfileScreen extends StatelessWidget {
                 prefixIcon: Icon(Icons.phone_outlined),
               ),
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: dobCtrl,
+              keyboardType: TextInputType.datetime,
+              decoration: const InputDecoration(
+                labelText: 'Date of Birth (DD/MM/YYYY)',
+                prefixIcon: Icon(Icons.cake_outlined),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: genderCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Gender (Male / Female / Other)',
+                prefixIcon: Icon(Icons.people_outline),
+              ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -375,6 +420,8 @@ class ProfileScreen extends StatelessWidget {
                   await FirestoreService.updateUserProfile(user.id, {
                     'name': nameCtrl.text.trim(),
                     'phone': phoneCtrl.text.trim(),
+                    'dob': dobCtrl.text.trim(),
+                    'gender': genderCtrl.text.trim(),
                   });
                   if (ctx.mounted) Navigator.pop(ctx);
                 },

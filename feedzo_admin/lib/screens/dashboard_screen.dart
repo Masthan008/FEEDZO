@@ -25,8 +25,20 @@ class DashboardScreen extends StatelessWidget {
               return StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance.collection('orders').snapshots(),
                 builder: (context, ordersSnap) {
-                  final users = usersSnap.data?.docs ?? [];
-                  final orders = ordersSnap.data?.docs ?? [];
+                  if (!usersSnap.hasData || !ordersSnap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (usersSnap.hasError || ordersSnap.hasError) {
+                    return const Center(child: Text("Error loading data"));
+                  }
+
+                  final users = usersSnap.data!.docs;
+                  final orders = ordersSnap.data!.docs;
+
+                  if (users.isEmpty && orders.isEmpty) {
+                    return const Center(child: Text("No data available"));
+                  }
                   
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(24),

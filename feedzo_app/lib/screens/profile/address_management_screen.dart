@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
@@ -30,10 +31,29 @@ class _AddressManagementScreenState extends State<AddressManagementScreen> {
     try {
       final permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
-        final pos = await Geolocator.getCurrentPosition();
-        // In a real app, you would use geocoding to get the address from lat/long.
-        // For now, we'll simulate it.
-        _addrCtrl.text = 'Lat: ${pos.latitude.toStringAsFixed(4)}, Long: ${pos.longitude.toStringAsFixed(4)} (Simulated Address)';
+        final pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        );
+
+        // Real reverse geocoding
+        try {
+          final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+          if (placemarks.isNotEmpty) {
+            final p = placemarks.first;
+            final parts = <String>[];
+            if (p.street != null && p.street!.isNotEmpty) parts.add(p.street!);
+            if (p.subLocality != null && p.subLocality!.isNotEmpty) parts.add(p.subLocality!);
+            if (p.locality != null && p.locality!.isNotEmpty) parts.add(p.locality!);
+            if (p.postalCode != null && p.postalCode!.isNotEmpty) parts.add(p.postalCode!);
+            if (p.administrativeArea != null && p.administrativeArea!.isNotEmpty) parts.add(p.administrativeArea!);
+            _addrCtrl.text = parts.join(', ');
+          } else {
+            _addrCtrl.text = '${pos.latitude.toStringAsFixed(6)}, ${pos.longitude.toStringAsFixed(6)}';
+          }
+        } catch (e) {
+          // If geocoding fails, show raw coordinates
+          _addrCtrl.text = '${pos.latitude.toStringAsFixed(6)}, ${pos.longitude.toStringAsFixed(6)}';
+        }
       }
     } catch (e) {
       if (mounted) {
