@@ -1,0 +1,43 @@
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+jwt_expiry = 3600
+enable_signup = true
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.order-created]
+verify_jwt = false
+
+[functions.driver-assigned]
+verify_jwt = false
+
+[functions.order-status]
+verify_jwt = false
+
+[functions.commission-calc]
+verify_jwt = false

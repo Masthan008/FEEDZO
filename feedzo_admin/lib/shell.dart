@@ -1,0 +1,78 @@
+import 'package:flutter/material.dart';
+import 'core/theme.dart';
+import 'widgets/sidebar.dart';
+import 'screens/dashboard_screen.dart';
+import 'screens/orders_screen.dart';
+import 'screens/restaurants_screen.dart';
+import 'screens/drivers_screen.dart';
+import 'screens/users_screen.dart';
+import 'screens/earnings_screen.dart';
+import 'screens/ai_insights_screen.dart';
+import 'screens/alerts_screen.dart';
+import 'screens/cod_settlement_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/send_notification_screen.dart';
+
+class AdminShell extends StatefulWidget {
+  const AdminShell({super.key});
+  @override
+  State<AdminShell> createState() => _AdminShellState();
+}
+
+class _AdminShellState extends State<AdminShell> {
+  AdminPage _current = AdminPage.dashboard;
+
+  Widget get _screen {
+    switch (_current) {
+      case AdminPage.dashboard: return const DashboardScreen();
+      case AdminPage.orders: return const OrdersScreen();
+      case AdminPage.restaurants: return const RestaurantsScreen();
+      case AdminPage.drivers: return const DriversScreen();
+      case AdminPage.users: return const UsersScreen();
+      case AdminPage.earnings: return const EarningsScreen();
+      case AdminPage.aiInsights: return const AIInsightsScreen();
+      case AdminPage.alerts: return const AlertsScreen();
+      case AdminPage.codSettlement: return const CodSettlementScreen();
+      case AdminPage.settings: return const SettingsScreen();
+      case AdminPage.sendNotification: return const SendNotificationScreen();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Row(
+        children: [
+          Sidebar(
+            current: _current,
+            onSelect: (p) => setState(() => _current = p),
+          ),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.0, 0.02),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey(_current),
+                child: _screen,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,61 @@
+Analyzing feedzo_driver_app...                                  
+
+   info - The imported package 'google_fonts' isn't a dependency of the importing package - lib\core\theme\app_theme.dart:2:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:google_fonts/google_fonts.dart' - lib\core\theme\app_theme.dart:2:8 - uri_does_not_exist
+  error - Undefined name 'GoogleFonts' - lib\core\theme\app_theme.dart:133:20 - undefined_identifier
+  error - Undefined name 'GoogleFonts' - lib\core\theme\app_theme.dart:140:27 - undefined_identifier
+  error - Undefined name 'GoogleFonts' - lib\core\theme\app_theme.dart:155:17 - undefined_identifier
+  error - Undefined name 'GoogleFonts' - lib\core\theme\app_theme.dart:195:15 - undefined_identifier
+  error - Undefined name 'GoogleFonts' - lib\core\theme\app_theme.dart:197:15 - undefined_identifier
+  error - Undefined name 'GoogleFonts' - lib\core\theme\app_theme.dart:204:15 - undefined_identifier
+  error - Undefined name 'GoogleFonts' - lib\core\theme\app_theme.dart:206:15 - undefined_identifier
+   info - The imported package 'google_fonts' isn't a dependency of the importing package - lib\main.dart:4:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:google_fonts/google_fonts.dart' - lib\main.dart:4:8 - uri_does_not_exist
+  error - Undefined name 'GoogleFonts' - lib\main.dart:15:3 - undefined_identifier
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\earnings\earnings_screen.dart:609:42 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\screens\home\home_screen.dart:46:59 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\home\home_screen.dart:93:7 - curly_braces_in_flow_control_structures
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\home\home_screen.dart:233:35 - deprecated_member_use
+warning - The name pi is shown, but isn't used - lib\screens\orders\live_tracking_screen.dart:2:32 - unused_shown_name
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\live_tracking_screen.dart:224:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\live_tracking_screen.dart:332:58 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\screens\orders\order_details_screen.dart:48:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\orders\order_details_screen.dart:57:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\orders\order_details_screen.dart:179:9 - curly_braces_in_flow_control_structures
+warning - The value of the local variable 'driverName' isn't used - lib\screens\orders\order_details_screen.dart:209:15 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\order_details_screen.dart:240:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\order_details_screen.dart:711:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\order_details_screen.dart:712:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\order_details_screen.dart:774:39 - deprecated_member_use
+   info - Statements in a for should be enclosed in a block - lib\screens\orders\order_details_screen.dart:777:7 - curly_braces_in_flow_control_structures
+   info - Statements in a for should be enclosed in a block - lib\screens\orders\order_details_screen.dart:779:7 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\orders_screen.dart:137:72 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\orders_screen.dart:147:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\orders\orders_screen.dart:147:160 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\screens\profile\profile_screen.dart:121:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\profile\profile_screen.dart:130:11 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\profile\profile_screen.dart:243:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\profile\profile_screen.dart:244:47 - deprecated_member_use
+warning - The value of the field '_cloudName' isn't used - lib\services\cloudinary_service.dart:9:16 - unused_field
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:22:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:38:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:41:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:44:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:48:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:60:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:73:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:76:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:79:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\cloudinary_service.dart:83:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\location_service.dart:56:7 - avoid_print
+   info - The imported package 'firebase_messaging' isn't a dependency of the importing package - lib\services\notification_service.dart:1:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:firebase_messaging/firebase_messaging.dart' - lib\services\notification_service.dart:1:8 - uri_does_not_exist
+  error - Undefined class 'RemoteMessage' - lib\services\notification_service.dart:6:49 - undefined_class
+  error - Undefined name 'FirebaseMessaging' - lib\services\notification_service.dart:9:16 - undefined_identifier
+  error - Undefined name 'FirebaseMessaging' - lib\services\notification_service.dart:16:5 - undefined_identifier
+  error - Undefined name 'FirebaseMessaging' - lib\services\notification_service.dart:17:5 - undefined_identifier
+warning - Unused import: 'package:firebase_auth/firebase_auth.dart' - lib\services\supabase_service.dart:3:8 - unused_import
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\services\supabase_service.dart:46:9 - use_null_aware_elements
+warning - Unused import: '../core/theme/app_theme.dart' - lib\widgets\approval_gate.dart:4:8 - unused_import
+  error - The name 'MyApp' isn't a class - test\widget_test.dart:16:35 - creation_with_non_type
+

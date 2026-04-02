@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ─────────────────────────────────────────
+    function isAuth() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+
+    function role() { return userDoc().role; }
+    function isAdmin() { return role() == 'admin'; }
+    function isDriver() { return role() == 'driver'; }
+    function isRestaurant() { return role() == 'restaurant'; }
+    function isCustomer() { return role() == 'customer'; }
+
+    function isApproved() {
+      return userDoc().status == 'approved';
+    }
+
+    // ── USERS ──────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isAuth() && (uid() == userId || isAdmin());
+      allow create: if isAuth() && uid() == userId;
+      allow update: if isAuth() && (uid() == userId || isAdmin());
+    }
+
+    // ── RESTAURANTS ────────────────────────────────────
+    match /restaurants/{restaurantId} {
+      allow read: if true; // Customers need to see restaurant details
+
+      allow create: if isAuth() && (isRestaurant() || isAdmin());
+
+      allow update: if isAuth() && (
+        isAdmin() ||
+        uid() == restaurantId
+      );
+    }
+
+    // ── ITEMS (MENU) ───────────────────────────────────
+    match /items/{itemId} {
+      allow read: if true; // Customers need to see menu items
+      allow create: if isAuth() && (request.resource.data.restaurantId == uid() || isAdmin());
+      allow update, delete: if isAuth() && (resource.data.restaurantId == uid() || isAdmin());
+    }
+
+    // ── DRIVERS ────────────────────────────────────────
+    match /drivers/{driverId} {
+      allow read: if true;
+
+      allow create: if isAuth() && (isDriver() || isAdmin());
+
+      allow update: if isAuth() && (
+        isAdmin() ||
+        uid() == driverId
+      );
+    }
+
+    // ── ORDERS ─────────────────────────────────────────
+    match /orders/{orderId} {
+
+      // READ ACCESS
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.customerId == uid() ||
+        resource.data.restaurantId == uid() ||
+        (resource.data.driverId != null && resource.data.driverId == uid())
+      );
+
+      // CREATE (CUSTOMER ONLY + APPROVED)
+      allow create: if isAuth() &&
+        isCustomer() &&
+        isApproved();
+
+      // UPDATE CONTROL (STRICT)
+      allow update: if isAuth() && (
+
+        // ADMIN: full control
+        isAdmin() ||
+
+        // CUSTOMER: can cancel
+        (
+           isCustomer() &&
+           resource.data.customerId == uid() &&
+           request.resource.data.diff(resource.data).changedKeys().hasOnly(['status'])
+        ) ||
+
+        // RESTAURANT: update status
+        (
+          isRestaurant() &&
+          resource.data.restaurantId == uid() &&
+          request.resource.data.diff(resource.data).changedKeys()
+            .hasOnly(['status', 'updatedAt'])
+        ) ||
+
+        // DRIVER: update status
+        (
+          isDriver() &&
+          resource.data.driverId == uid() &&
+          request.resource.data.diff(resource.data).changedKeys()
+            .hasOnly(['status', 'updatedAt'])
+        )
+      );
+    }
+
+    // ── SETTLEMENTS ────────────────────────────────────
+    match /settlements/{docId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        uid() == docId
+      );
+
+      allow write: if isAuth() && (
+        isAdmin() ||
+        uid() == docId
+      );
+    }
+
+    // ── TRANSACTIONS ───────────────────────────────────
+    match /transactions/{txId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.restaurantId == uid()
+      );
+
+      allow write: if isAuth() && isAdmin();
+    }
+
+    // ── NOTIFICATIONS (ONESIGNAL STORAGE) ──────────────
+    match /notifications/{notifId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.targetUserId == uid()
+      );
+
+      allow create: if isAuth() && isAdmin();
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "firestore": {
+    "rules": "../firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "feedzo-4840a",
+          "appId": "1:138473944117:android:abd098bcf514a6ff60ed7c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "feedzo-4840a",
+          "configurations": {
+            "android": "1:138473944117:android:abd098bcf514a6ff60ed7c"
+          }
+        }
+      }
+    }
+  }
+}

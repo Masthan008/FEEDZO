@@ -1,0 +1,265 @@
+import '../models/order_model.dart';
+import '../models/menu_item_model.dart';
+import '../models/transaction_model.dart';
+
+class MockData {
+  static List<OrderModel> orders = [
+    OrderModel(
+      id: 'ORD001',
+      customerId: 'CUST001',
+      customerName: 'James Carter',
+      phone: '+1 555-0101',
+      address: '12 Oak Street, Downtown',
+      items: [
+        OrderItem(name: 'Grilled Chicken Burger', qty: 2, price: 12.99),
+        OrderItem(name: 'French Fries', qty: 1, price: 4.50),
+        OrderItem(name: 'Coke', qty: 2, price: 2.50),
+      ],
+      status: OrderStatus.placed,
+      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      restaurantId: 'REST001',
+      totalAmount: 35.48,
+    ),
+    OrderModel(
+      id: 'ORD002',
+      customerId: 'CUST002',
+      customerName: 'Sophia Williams',
+      phone: '+1 555-0202',
+      address: '45 Maple Ave, Westside',
+      items: [
+        OrderItem(name: 'Margherita Pizza', qty: 1, price: 14.99),
+        OrderItem(name: 'Caesar Salad', qty: 1, price: 8.99),
+      ],
+      status: OrderStatus.preparing,
+      createdAt: DateTime.now().subtract(const Duration(minutes: 18)),
+      restaurantId: 'REST001',
+      totalAmount: 23.98,
+    ),
+    OrderModel(
+      id: 'ORD003',
+      customerId: 'CUST003',
+      customerName: 'Liam Johnson',
+      phone: '+1 555-0303',
+      address: '78 Pine Road, Northgate',
+      items: [
+        OrderItem(name: 'BBQ Ribs Platter', qty: 1, price: 22.99),
+        OrderItem(name: 'Coleslaw', qty: 1, price: 3.50),
+        OrderItem(name: 'Lemonade', qty: 2, price: 3.00),
+      ],
+      status: OrderStatus.picked,
+      createdAt: DateTime.now().subtract(const Duration(minutes: 35)),
+      restaurantId: 'REST001',
+      totalAmount: 32.49,
+    ),
+    OrderModel(
+      id: 'ORD004',
+      customerId: 'CUST004',
+      customerName: 'Emma Davis',
+      phone: '+1 555-0404',
+      address: '9 Birch Lane, Eastpark',
+      items: [
+        OrderItem(name: 'Veggie Wrap', qty: 2, price: 9.99),
+        OrderItem(name: 'Smoothie', qty: 1, price: 5.50),
+      ],
+      status: OrderStatus.delivered,
+      createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 10)),
+      restaurantId: 'REST001',
+      totalAmount: 25.48,
+    ),
+    OrderModel(
+      id: 'ORD005',
+      customerId: 'CUST005',
+      customerName: 'Noah Brown',
+      phone: '+1 555-0505',
+      address: '33 Cedar Blvd, Midtown',
+      items: [
+        OrderItem(name: 'Pasta Carbonara', qty: 1, price: 13.99),
+        OrderItem(name: 'Garlic Bread', qty: 2, price: 3.00),
+      ],
+      status: OrderStatus.placed,
+      createdAt: DateTime.now().subtract(const Duration(minutes: 2)),
+      restaurantId: 'REST001',
+      totalAmount: 19.99,
+    ),
+    OrderModel(
+      id: 'ORD006',
+      customerId: 'CUST006',
+      customerName: 'Olivia Martinez',
+      phone: '+1 555-0606',
+      address: '21 Elm Street, Southside',
+      items: [
+        OrderItem(name: 'Steak & Fries', qty: 1, price: 28.99),
+        OrderItem(name: 'Red Wine', qty: 1, price: 9.00),
+      ],
+      status: OrderStatus.cancelled,
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      restaurantId: 'REST001',
+      totalAmount: 37.99,
+    ),
+  ];
+
+  static List<MenuItemModel> menuItems = [
+    MenuItemModel(
+      id: 'M001',
+      restaurantId: 'REST001',
+      name: 'Grilled Chicken Burger',
+      description: 'Juicy chicken patty with lettuce',
+      price: 12.99,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Burgers',
+    ),
+    MenuItemModel(
+      id: 'M002',
+      restaurantId: 'REST001',
+      name: 'BBQ Ribs Platter',
+      description: 'Slow cooked ribs with BBQ sauce',
+      price: 22.99,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Platters',
+    ),
+    MenuItemModel(
+      id: 'M003',
+      restaurantId: 'REST001',
+      name: 'Margherita Pizza',
+      description: 'Classic tomato and mozzarella',
+      price: 14.99,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Pizza',
+    ),
+    MenuItemModel(
+      id: 'M004',
+      restaurantId: 'REST001',
+      name: 'Caesar Salad',
+      description: 'Fresh romaine with caesar dressing',
+      price: 8.99,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Salads',
+    ),
+    MenuItemModel(
+      id: 'M005',
+      restaurantId: 'REST001',
+      name: 'Pasta Carbonara',
+      description: 'Creamy pasta with bacon',
+      price: 13.99,
+      isAvailable: false,
+      imageUrl: '',
+      category: 'Pasta',
+    ),
+    MenuItemModel(
+      id: 'M006',
+      restaurantId: 'REST001',
+      name: 'Veggie Wrap',
+      description: 'Healthy wrap with mixed vegetables',
+      price: 9.99,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Wraps',
+    ),
+    MenuItemModel(
+      id: 'M007',
+      restaurantId: 'REST001',
+      name: 'French Fries',
+      description: 'Crispy golden fries',
+      price: 4.50,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Sides',
+    ),
+    MenuItemModel(
+      id: 'M008',
+      restaurantId: 'REST001',
+      name: 'Steak & Fries',
+      description: 'Tender steak with side of fries',
+      price: 28.99,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Main Course',
+    ),
+    MenuItemModel(
+      id: 'M009',
+      restaurantId: 'REST001',
+      name: 'Lemonade',
+      description: 'Refreshing lemon drink',
+      price: 3.00,
+      isAvailable: true,
+      imageUrl: '',
+      category: 'Beverages',
+    ),
+    MenuItemModel(
+      id: 'M010',
+      restaurantId: 'REST001',
+      name: 'Smoothie',
+      description: 'Mixed fruit smoothie',
+      price: 5.50,
+      isAvailable: false,
+      imageUrl: '',
+      category: 'Beverages',
+    ),
+  ];
+
+  static List<TransactionModel> transactions = [
+    TransactionModel(
+      id: 'TXN001',
+      orderId: 'ORD004',
+      description: 'Order #ORD004 - Emma Davis',
+      amount: 25.48,
+      commission: 2.55,
+      date: DateTime.now().subtract(const Duration(hours: 1, minutes: 10)),
+      type: TransactionType.earning,
+    ),
+    TransactionModel(
+      id: 'TXN002',
+      orderId: 'ORD003',
+      description: 'Order #ORD003 - Liam Johnson',
+      amount: 32.49,
+      commission: 3.25,
+      date: DateTime.now().subtract(const Duration(hours: 2)),
+      type: TransactionType.earning,
+    ),
+    TransactionModel(
+      id: 'TXN003',
+      orderId: 'ORD002',
+      description: 'Commission Deduction',
+      amount: 3.25,
+      commission: 0,
+      date: DateTime.now().subtract(const Duration(hours: 2, minutes: 5)),
+      type: TransactionType.commission,
+    ),
+    TransactionModel(
+      id: 'TXN004',
+      orderId: 'ORD_OLD1',
+      description: 'Order #ORD_OLD1 - Alex Turner',
+      amount: 45.00,
+      commission: 4.50,
+      date: DateTime.now().subtract(const Duration(days: 1)),
+      type: TransactionType.earning,
+    ),
+  ];
+
+  static double totalBalance = 1240.50;
+  static double pendingPayout = 340.20;
+
+  static List<double> weeklyEarnings = [450, 320, 580, 410, 620, 540, 480];
+  static const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  static Map<String, double> monthlyRevenue = {
+    'Jan': 4200,
+    'Feb': 3800,
+    'Mar': 5100,
+    'Apr': 4600,
+    'May': 5400,
+    'Jun': 5900,
+  };
+
+  static Map<String, double> topItems = {
+    'Grilled Chicken Burger': 142,
+    'BBQ Ribs Platter': 98,
+    'Margherita Pizza': 85,
+    'Veggie Wrap': 64,
+    'Caesar Salad': 42,
+  };
+}

@@ -1,0 +1,141 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../core/theme.dart';
+import '../providers/admin_provider.dart';
+
+enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, aiInsights, alerts, codSettlement, settings, sendNotification }
+
+class Sidebar extends StatelessWidget {
+  final AdminPage current;
+  final ValueChanged<AdminPage> onSelect;
+  const Sidebar({super.key, required this.current, required this.onSelect});
+
+  String _initials(String name) {
+    if (name.isEmpty) return 'A';
+    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return parts[0][0].toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ap = context.watch<AdminProvider>();
+    final alertCount = ap.unreadAlerts;
+
+    return Container(
+      width: 240,
+      color: AppColors.sidebar,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+            child: Row(
+              children: [
+                Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 20)),
+                const SizedBox(width: 10),
+                const Text('Feedzo', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 6),
+                Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(4)), child: const Text('Admin', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold))),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('MAIN MENU', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.dashboard_rounded, label: 'Dashboard', page: AdminPage.dashboard, current: current, onTap: onSelect),
+                  _Item(icon: Icons.receipt_long_rounded, label: 'Orders', page: AdminPage.orders, current: current, onTap: onSelect),
+                  _Item(icon: Icons.store_rounded, label: 'Restaurants', page: AdminPage.restaurants, current: current, onTap: onSelect),
+                  _Item(icon: Icons.delivery_dining_rounded, label: 'Drivers', page: AdminPage.drivers, current: current, onTap: onSelect),
+                  _Item(icon: Icons.people_rounded, label: 'Users', page: AdminPage.users, current: current, onTap: onSelect),
+                  const SizedBox(height: 16),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('ANALYTICS', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.currency_rupee_rounded, label: 'Earnings', page: AdminPage.earnings, current: current, onTap: onSelect),
+                  if (ap.settings.driverSettlementEnabled)
+                    _Item(icon: Icons.account_balance_wallet_rounded, label: 'COD & Settlement', page: AdminPage.codSettlement, current: current, onTap: onSelect, badge: ap.driversWithPendingCash > 0 ? ap.driversWithPendingCash : null),
+                  _Item(icon: Icons.auto_awesome_rounded, label: 'AI Insights', page: AdminPage.aiInsights, current: current, onTap: onSelect),
+                  _Item(icon: Icons.notifications_rounded, label: 'Alerts', page: AdminPage.alerts, current: current, onTap: onSelect, badge: alertCount > 0 ? alertCount : null),
+                  const SizedBox(height: 16),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('SYSTEM', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.settings_rounded, label: 'Settings', page: AdminPage.settings, current: current, onTap: onSelect),
+                  _Item(icon: Icons.notifications_active_rounded, label: 'Send Notification', page: AdminPage.sendNotification, current: current, onTap: onSelect),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+          const Divider(color: Color(0xFF1F2937), height: 1),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.primary,
+                  child: Text(
+                    _initials(context.watch<AdminProvider>().adminName),
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    context.watch<AdminProvider>().adminName.isEmpty ? 'Admin' : context.watch<AdminProvider>().adminName,
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    context.watch<AdminProvider>().adminEmail,
+                    style: const TextStyle(color: Color(0xFF6B7280), fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ])),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Item extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final AdminPage page;
+  final AdminPage current;
+  final ValueChanged<AdminPage> onTap;
+  final int? badge;
+  const _Item({required this.icon, required this.label, required this.page, required this.current, required this.onTap, this.badge});
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = page == current;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onTap(page),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(color: selected ? AppColors.primary : Colors.transparent, borderRadius: BorderRadius.circular(8)),
+          child: Row(
+            children: [
+              Icon(icon, color: selected ? Colors.white : const Color(0xFF9CA3AF), size: 18),
+              const SizedBox(width: 10),
+              Expanded(child: Text(label, style: TextStyle(color: selected ? Colors.white : const Color(0xFF9CA3AF), fontSize: 14, fontWeight: selected ? FontWeight.w600 : FontWeight.normal))),
+              if (badge != null)
+                Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2), decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)), child: Text('$badge', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
