@@ -9,7 +9,10 @@ class RestaurantProvider extends ChangeNotifier {
   String? _error;
   String _searchQuery = '';
   bool _vegOnly = false;
+  bool _freeDeliveryOnly = false;
+  bool _fastDeliveryOnly = false;
   double _minRating = 0;
+  String _sortBy = 'default'; // 'default', 'rating', 'deliveryTime', 'deliveryFee'
   StreamSubscription? _sub;
 
   List<Restaurant> get restaurants => _filtered;
@@ -17,7 +20,10 @@ class RestaurantProvider extends ChangeNotifier {
   String? get error => _error;
   String get searchQuery => _searchQuery;
   bool get vegOnly => _vegOnly;
+  bool get freeDeliveryOnly => _freeDeliveryOnly;
+  bool get fastDeliveryOnly => _fastDeliveryOnly;
   double get minRating => _minRating;
+  String get sortBy => _sortBy;
 
   RestaurantProvider() {
     loadRestaurants();
@@ -47,18 +53,38 @@ class RestaurantProvider extends ChangeNotifier {
   }
 
   List<Restaurant> get _filtered {
-    return _restaurants.where((r) {
+    var result = _restaurants.where((r) {
       final matchesSearch = _searchQuery.isEmpty ||
           r.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           r.cuisine.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesVeg = !_vegOnly || r.isVeg;
       final matchesRating = r.rating >= _minRating;
-      return matchesSearch && matchesVeg && matchesRating;
+      final matchesFreeDelivery = !_freeDeliveryOnly || r.deliveryFee == 0;
+      final matchesFastDelivery = !_fastDeliveryOnly || r.deliveryTime <= 30;
+      return matchesSearch && matchesVeg && matchesRating && matchesFreeDelivery && matchesFastDelivery;
     }).toList();
+
+    // Apply sorting
+    switch (_sortBy) {
+      case 'rating':
+        result.sort((a, b) => b.rating.compareTo(a.rating));
+        break;
+      case 'deliveryTime':
+        result.sort((a, b) => a.deliveryTime.compareTo(b.deliveryTime));
+        break;
+      case 'deliveryFee':
+        result.sort((a, b) => a.deliveryFee.compareTo(b.deliveryFee));
+        break;
+    }
+
+    return result;
   }
 
   List<Restaurant> get trending =>
       _restaurants.where((r) => r.tags.contains('Trending')).toList();
+
+  List<Restaurant> get recommended =>
+      _restaurants.where((r) => r.isRecommended).toList();
 
   List<Restaurant> get aiRecommended =>
       _restaurants.where((r) => r.tags.contains('AI Pick')).toList();
@@ -73,15 +99,33 @@ class RestaurantProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFreeDeliveryOnly(bool value) {
+    _freeDeliveryOnly = value;
+    notifyListeners();
+  }
+
+  void setFastDeliveryOnly(bool value) {
+    _fastDeliveryOnly = value;
+    notifyListeners();
+  }
+
   void setMinRating(double value) {
     _minRating = value;
     notifyListeners();
   }
 
+  void setSortBy(String value) {
+    _sortBy = value;
+    notifyListeners();
+  }
+
   void resetFilters() {
     _vegOnly = false;
+    _freeDeliveryOnly = false;
+    _fastDeliveryOnly = false;
     _minRating = 0;
     _searchQuery = '';
+    _sortBy = 'default';
     notifyListeners();
   }
 

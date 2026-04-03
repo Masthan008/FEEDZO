@@ -1,0 +1,31 @@
+﻿Analyzing feedzo_admin...                                       
+
+warning - The value of the local variable 'ap' isn't used - lib\screens\ai_insights_screen.dart:14:11 - unused_local_variable
+  error - Invalid constant value - lib\screens\coupons_screen.dart:33:26 - invalid_constant
+  error - The getter 'text' isn't defined for the type 'AppColors' - lib\screens\coupons_screen.dart:33:36 - undefined_getter
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\coupons_screen.dart:260:27 - deprecated_member_use
+  error - The getter 'text' isn't defined for the type 'AppColors' - lib\screens\coupons_screen.dart:357:49 - undefined_getter
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\coupons_screen.dart:370:21 - deprecated_member_use
+  error - The getter 'card' isn't defined for the type 'AppColors' - lib\screens\coupons_screen.dart:463:26 - undefined_getter
+  error - Invalid constant value - lib\screens\coupons_screen.dart:544:22 - invalid_constant
+  error - The getter 'text' isn't defined for the type 'AppColors' - lib\screens\coupons_screen.dart:544:32 - undefined_getter
+warning - The value of the local variable 'customerId' isn't used - lib\screens\orders_screen.dart:143:11 - unused_local_variable
+
+flutter : 10 issues 
+found. (ran in 2.8s)
+At line:1 char:1
++ flutter analyze 
+--no-pub 2>&1 | Out-File 
+-FilePath 
+analyze_admin.txt  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (10 issues found. (r   
+ an in 2.8s):String)     
+[], RemoteException
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 

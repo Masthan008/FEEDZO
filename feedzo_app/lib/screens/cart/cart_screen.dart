@@ -8,6 +8,8 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/quantity_control.dart';
+import '../../services/firestore_service.dart';
+import '../../services/razorpay_service.dart';
 import '../orders/order_tracking_screen.dart';
 
 import '../profile/address_management_screen.dart';
@@ -43,7 +45,7 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
 
-    final order = Order(
+    var order = Order(
       id: '',
       customerId: auth.user!.id,
       customerName: auth.user!.name,
@@ -57,9 +59,44 @@ class _CartScreenState extends State<CartScreen> {
       status: OrderStatus.placed,
       createdAt: DateTime.now(),
       paymentType: _paymentType,
+      couponCode: cart.couponCode,
+      discount: cart.discount,
+      tipAmount: cart.tipAmount,
+      deliveryFee: cart.deliveryFee,
+      taxAmount: cart.taxAmount,
+      deliveryInstructions: cart.deliveryInstructions,
+      scheduledFor: cart.scheduledFor,
     );
 
     try {
+      // If online payment, open Razorpay first
+      if (_paymentType == 'online') {
+        try {
+          final paymentId = await RazorpayService.openCheckout(
+            amount: cart.total,
+            orderId: 'feedzo_${DateTime.now().millisecondsSinceEpoch}',
+            customerName: auth.user!.name,
+            customerEmail: auth.user!.email,
+            customerPhone: auth.user!.phone,
+          );
+          // Payment successful — set payment ID on order
+          order = order.copyWith(
+            paymentId: paymentId,
+            paymentStatus: 'paid',
+          );
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Payment failed: $e'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return; // Don't place order if payment failed
+        }
+      }
+
       final orderId = await orderProvider.placeOrder(order);
       cart.clear();
       HapticFeedback.heavyImpact();
@@ -199,14 +236,11 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                   // Restaurant info
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -270,6 +304,7 @@ class _CartScreenState extends State<CartScreen> {
                             cart.restaurantName!,
                             cart.restaurantImage!,
                             cart.deliveryFee,
+                            forceSwitch: true,
                           ),
                       onRemove: () =>
                           context.read<CartProvider>().removeItem(ci.item.id),
@@ -338,6 +373,19 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ),
                   const SizedBox(height: 16),
+
+                  // ── Delivery Instructions ─────────────────────
+                  _DeliveryInstructionsSection(cart: cart),
+                  const SizedBox(height: 12),
+
+                  // ── Tip for the Delivery Partner ──────────────
+                  _TipSection(cart: cart),
+                  const SizedBox(height: 12),
+
+                  // ── Coupon Code ───────────────────────────────
+                  _CouponSection(cart: cart),
+                  const SizedBox(height: 16),
+
                   // Bill summary
                   _BillSummary(cart: cart),
                   const SizedBox(height: 16),
@@ -471,31 +519,29 @@ class _CartScreenState extends State<CartScreen> {
                 ],
               ),
             ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.cardShadow,
+                blurRadius: 12,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-          // Place order
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cardShadow,
-                  blurRadius: 12,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: AppButton(
-              label: _paymentType == 'cod'
-                  ? 'Place Order (COD) • ₹${cart.total.toStringAsFixed(0)}'
-                  : 'Pay Online • ₹${cart.total.toStringAsFixed(0)}',
-              onPressed: () => _placeOrder(context),
-              isLoading: orderProvider.isPlacing,
-              width: double.infinity,
-              useGradient: true,
-            ),
+          child: AppButton(
+            label: _paymentType == 'cod'
+                ? 'Place Order (COD) • ₹${cart.total.toStringAsFixed(0)}'
+                : 'Pay Online • ₹${cart.total.toStringAsFixed(0)}',
+            onPressed: () => _placeOrder(context),
+            isLoading: orderProvider.isPlacing,
+            width: double.infinity,
+            useGradient: true,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -644,9 +690,6 @@ class _BillSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final taxes = cart.subtotal * 0.05;
-    final grandTotal = cart.total + taxes;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -670,16 +713,47 @@ class _BillSummary extends StatelessWidget {
           _BillRow('Delivery Fee',
               cart.deliveryFee == 0 ? 'FREE' : '₹${cart.deliveryFee.toStringAsFixed(0)}',
               highlight: cart.deliveryFee == 0),
-          _BillRow('Taxes & Charges', '₹${taxes.toStringAsFixed(0)}'),
+          _BillRow('Taxes & GST (5%)', '₹${cart.taxAmount.toStringAsFixed(0)}'),
+          if (cart.discount > 0)
+            _BillRow('Coupon Discount', '-₹${cart.discount.toStringAsFixed(0)}',
+                highlight: true),
+          if (cart.tipAmount > 0)
+            _BillRow('Delivery Tip', '₹${cart.tipAmount.toStringAsFixed(0)}'),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Divider(color: AppColors.divider),
           ),
           _BillRow(
             'Grand Total',
-            '₹${grandTotal.toStringAsFixed(0)}',
+            '₹${cart.total.toStringAsFixed(0)}',
             bold: true,
           ),
+          if (cart.discount > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: AppShape.small,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.celebration_rounded,
+                        color: AppColors.primary, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'You\'re saving ₹${cart.discount.toStringAsFixed(0)} on this order!',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -723,6 +797,423 @@ class _BillRow extends StatelessWidget {
               fontSize: bold ? 16 : 14,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Delivery Instructions ────────────────────────────────────────────────────
+class _DeliveryInstructionsSection extends StatefulWidget {
+  final CartProvider cart;
+  const _DeliveryInstructionsSection({required this.cart});
+
+  @override
+  State<_DeliveryInstructionsSection> createState() =>
+      _DeliveryInstructionsSectionState();
+}
+
+class _DeliveryInstructionsSectionState
+    extends State<_DeliveryInstructionsSection> {
+  bool _isExpanded = false;
+  late TextEditingController _ctrl;
+
+  final _quickOptions = [
+    'Don\'t ring the bell',
+    'Leave at door',
+    'No cutlery, please',
+    'Call before arriving',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.cart.deliveryInstructions ?? '');
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.medium,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            child: Row(
+              children: [
+                const Icon(Icons.edit_note_rounded,
+                    color: AppColors.primary, size: 22),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Delivery Instructions',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                if (widget.cart.deliveryInstructions != null &&
+                    widget.cart.deliveryInstructions!.isNotEmpty)
+                  const Icon(Icons.check_circle,
+                      color: AppColors.primary, size: 18),
+                Icon(
+                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: AppColors.textHint,
+                ),
+              ],
+            ),
+          ),
+          if (_isExpanded) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickOptions.map((opt) {
+                final isSelected =
+                    widget.cart.deliveryInstructions == opt;
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.cart.setDeliveryInstructions(
+                        isSelected ? null : opt);
+                    _ctrl.text = isSelected ? '' : opt;
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.surfaceVariant,
+                      borderRadius: AppShape.small,
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.border,
+                      ),
+                    ),
+                    child: Text(
+                      opt,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _ctrl,
+              onChanged: (v) =>
+                  widget.cart.setDeliveryInstructions(v.isEmpty ? null : v),
+              decoration: InputDecoration(
+                hintText: 'Or type your own...',
+                hintStyle: const TextStyle(
+                    color: AppColors.textHint, fontSize: 13),
+                filled: true,
+                fillColor: AppColors.surfaceVariant,
+                border: OutlineInputBorder(
+                  borderRadius: AppShape.small,
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+              ),
+              maxLines: 2,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Tip Section ──────────────────────────────────────────────────────────────
+class _TipSection extends StatelessWidget {
+  final CartProvider cart;
+  const _TipSection({required this.cart});
+
+  @override
+  Widget build(BuildContext context) {
+    final tipOptions = [0.0, 20.0, 30.0, 50.0];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.medium,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.volunteer_activism_rounded,
+                  color: Colors.pinkAccent, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Tip your delivery partner',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Your kindness means a lot! 100% goes to your partner.',
+            style: TextStyle(color: AppColors.textHint, fontSize: 11),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: tipOptions.map((tip) {
+              final isSelected = cart.tipAmount == tip;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    cart.setTip(tip);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.surfaceVariant,
+                      borderRadius: AppShape.small,
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.border,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      tip == 0 ? 'None' : '₹${tip.toInt()}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Coupon Section ───────────────────────────────────────────────────────────
+class _CouponSection extends StatefulWidget {
+  final CartProvider cart;
+  const _CouponSection({required this.cart});
+
+  @override
+  State<_CouponSection> createState() => _CouponSectionState();
+}
+
+class _CouponSectionState extends State<_CouponSection> {
+  final _couponCtrl = TextEditingController();
+  bool _loading = false;
+  String? _errorMsg;
+
+  @override
+  void dispose() {
+    _couponCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _applyCoupon() async {
+    final code = _couponCtrl.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _loading = true;
+      _errorMsg = null;
+    });
+
+    final result =
+        await FirestoreService.validateCoupon(code, widget.cart.subtotal);
+
+    if (!mounted) return;
+
+    if (result == null) {
+      setState(() {
+        _loading = false;
+        _errorMsg = 'Invalid or expired coupon code';
+      });
+    } else {
+      widget.cart.applyCoupon(
+        result['code'] as String,
+        (result['discount'] as num).toDouble(),
+      );
+      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Coupon applied! You save ₹${(result['discount'] as num).toStringAsFixed(0)}'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasApplied = widget.cart.couponCode != null;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.medium,
+        border: Border.all(
+          color: hasApplied ? AppColors.primary : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasApplied)
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: AppShape.small,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_offer_rounded,
+                          color: AppColors.primary, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        widget.cart.couponCode!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '-₹${widget.cart.discount.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    widget.cart.removeCoupon();
+                    _couponCtrl.clear();
+                    setState(() => _errorMsg = null);
+                  },
+                  child: const Icon(Icons.close, size: 18, color: Colors.grey),
+                ),
+              ],
+            )
+          else ...[
+            Row(
+              children: [
+                const Icon(Icons.local_offer_outlined,
+                    color: AppColors.textHint, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _couponCtrl,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      hintText: 'Enter coupon code',
+                      hintStyle: const TextStyle(
+                          color: AppColors.textHint, fontSize: 13),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      errorText: _errorMsg,
+                      errorStyle: const TextStyle(fontSize: 11),
+                    ),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    ),
+                    onSubmitted: (_) => _applyCoupon(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _loading ? null : _applyCoupon,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: AppShape.small,
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'APPLY',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

@@ -10,8 +10,13 @@ import 'screens/earnings_screen.dart';
 import 'screens/ai_insights_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/cod_settlement_screen.dart';
+import 'screens/coupons_screen.dart';
+import 'screens/refunds_screen.dart';
+import 'screens/incentives_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/banners_screen.dart';
 import 'screens/send_notification_screen.dart';
+import 'screens/recommended_restaurants_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -30,6 +35,11 @@ class _AdminShellState extends State<AdminShell> {
       case AdminPage.drivers: return const DriversScreen();
       case AdminPage.users: return const UsersScreen();
       case AdminPage.earnings: return const EarningsScreen();
+      case AdminPage.coupons: return const CouponsScreen();
+      case AdminPage.banners: return const BannersScreen();
+      case AdminPage.refunds: return const RefundsScreen();
+      case AdminPage.incentives: return const IncentivesScreen();
+      case AdminPage.recommended: return const RecommendedRestaurantsScreen();
       case AdminPage.aiInsights: return const AIInsightsScreen();
       case AdminPage.alerts: return const AlertsScreen();
       case AdminPage.codSettlement: return const CodSettlementScreen();

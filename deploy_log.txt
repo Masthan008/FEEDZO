@@ -1,0 +1,39 @@
+﻿node.exe : WARNING: 
+Docker is not running
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C
+:\Users\masth\AppData\Roa
+ming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (WARNING: Docker is    
+ not running:String)     
+[], RemoteException
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+Uploading asset 
+(loyalty-calculate): supa
+base/functions/loyalty-ca
+lculate/index.ts
+unexpected deploy status 
+400: {"message":"Failed 
+to bundle the function 
+(reason: Module not 
+found \"https://esm.sh/@o
+nesignal/node-onesignal@1
+\".\n    at file:///tmp/u
+ser_fn_iuunpzrewtugdvvhyc
+yx_5552ace3-d859-4776-bb2
+9-0f1738edb093_1/source/s
+upabase/functions/loyalty
+-calculate/index.ts:5:27)
+."}
+Try rerunning the 
+command with --debug to 
+troubleshoot the error.

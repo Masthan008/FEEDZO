@@ -9,6 +9,7 @@ import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/restaurant_provider.dart';
 import 'providers/location_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/cart/cart_screen.dart';
@@ -42,14 +43,16 @@ class FeedzoApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => RestaurantProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
+      child: Consumer<ThemeProvider>(
+        builder: (_, themeProvider, __) => MaterialApp(
         title: 'Feedzo',
         debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.light,
+        themeMode: themeProvider.mode,
         routes: {
           '/cart': (_) => const CartScreen(),
           '/dashboard': (_) => const DashboardScreen(),
@@ -65,6 +68,7 @@ class FeedzoApp extends StatelessWidget {
           return null;
         },
         home: const _AuthGate(),
+      ),
       ),
     );
   }

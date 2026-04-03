@@ -145,6 +145,30 @@ class LocationProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> setManualAddress(String address) async {
+    if (address.trim().isEmpty) return;
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final locations = await locationFromAddress(address).timeout(const Duration(seconds: 10));
+      if (locations.isNotEmpty) {
+        final loc = locations.first;
+        _latitude = loc.latitude;
+        _longitude = loc.longitude;
+        _currentAddress = address.trim();
+        _error = null;
+      } else {
+        _error = "Address not found";
+      }
+    } catch (e) {
+      debugPrint('[LocationProvider] Manual search error: $e');
+      _error = "Could not locate address";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _positionSub?.cancel();

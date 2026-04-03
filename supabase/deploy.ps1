@@ -3,7 +3,7 @@
 
 Write-Host "Deploying Feedzo Edge Functions..." -ForegroundColor Green
 
-$functions = @("send-notification", "order-created", "driver-assigned", "order-status", "commission-calc")
+$functions = @("send-notification", "order-created", "driver-assigned", "order-status", "commission-calc", "loyalty-calculate", "loyalty-redeem")
 
 foreach ($fn in $functions) {
     Write-Host "Deploying $fn..." -ForegroundColor Cyan

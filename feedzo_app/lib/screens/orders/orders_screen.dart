@@ -323,11 +323,7 @@ class _OrderCard extends StatelessWidget {
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       final cart = context.read<CartProvider>();
-                      cart.clear();
-                      for (var ci in order.items) {
-                        cart.addItem(ci.item, order.restaurantId,
-                            order.restaurantName, order.restaurantImage, 0);
-                      }
+                      cart.reorderFromPast(order);
                       Navigator.pushNamed(context, '/cart');
                     },
                     style: TextButton.styleFrom(

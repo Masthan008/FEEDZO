@@ -86,17 +86,17 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               ),
               if (cart.itemCount > 0 && cart.restaurantId == restaurant.id)
                 Positioned(
-                  bottom: 16,
+                  bottom: MediaQuery.of(context).padding.bottom + 16,
                   left: 16,
                   right: 16,
                   child: _CartBar(
-                    cart: cart,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const CartScreen()),
+                      cart: cart,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const CartScreen()),
+                      ),
                     ),
-                  ),
                 ),
             ],
           );
@@ -468,13 +468,50 @@ class _MenuItemCard extends StatelessWidget {
                   if (item.isAvailable)
                     QuantityControl(
                       quantity: qty,
-                      onAdd: () => cart.addItem(
-                        item,
-                        restaurant.id,
-                        restaurant.name,
-                        restaurant.firstImage,
-                        restaurant.deliveryFee,
-                      ),
+                      onAdd: () {
+                        if (cart.wouldSwitchRestaurant(restaurant.id)) {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Replace cart items?'),
+                              content: Text(
+                                'Your cart has items from ${cart.restaurantName}. '
+                                'Adding this item will clear your cart.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    cart.addItem(
+                                      item,
+                                      restaurant.id,
+                                      restaurant.name,
+                                      restaurant.firstImage,
+                                      restaurant.deliveryFee,
+                                      forceSwitch: true,
+                                    );
+                                  },
+                                  child: const Text('Yes, start fresh'),
+                                ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          HapticFeedback.lightImpact();
+                          cart.addItem(
+                            item,
+                            restaurant.id,
+                            restaurant.name,
+                            restaurant.firstImage,
+                            restaurant.deliveryFee,
+                            forceSwitch: true,
+                          );
+                        }
+                      },
                       onRemove: () => cart.removeItem(item.id),
                     )
                   else

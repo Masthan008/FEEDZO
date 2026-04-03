@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/admin_provider.dart';
 
-enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, aiInsights, alerts, codSettlement, settings, sendNotification }
+enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification }
 
 class Sidebar extends StatelessWidget {
   final AdminPage current;
@@ -55,6 +55,11 @@ class Sidebar extends StatelessWidget {
                   const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('ANALYTICS', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
                   const SizedBox(height: 8),
                   _Item(icon: Icons.currency_rupee_rounded, label: 'Earnings', page: AdminPage.earnings, current: current, onTap: onSelect),
+                  _Item(icon: Icons.local_offer_rounded, label: 'Coupons', page: AdminPage.coupons, current: current, onTap: onSelect),
+                  _Item(icon: Icons.view_carousel_rounded, label: 'Banners', page: AdminPage.banners, current: current, onTap: onSelect),
+                  _Item(icon: Icons.currency_exchange_rounded, label: 'Refunds', page: AdminPage.refunds, current: current, onTap: onSelect),
+                  _Item(icon: Icons.emoji_events_rounded, label: 'Incentives', page: AdminPage.incentives, current: current, onTap: onSelect),
+                  _Item(icon: Icons.thumb_up_rounded, label: 'Recommended', page: AdminPage.recommended, current: current, onTap: onSelect),
                   if (ap.settings.driverSettlementEnabled)
                     _Item(icon: Icons.account_balance_wallet_rounded, label: 'COD & Settlement', page: AdminPage.codSettlement, current: current, onTap: onSelect, badge: ap.driversWithPendingCash > 0 ? ap.driversWithPendingCash : null),
                   _Item(icon: Icons.auto_awesome_rounded, label: 'AI Insights', page: AdminPage.aiInsights, current: current, onTap: onSelect),

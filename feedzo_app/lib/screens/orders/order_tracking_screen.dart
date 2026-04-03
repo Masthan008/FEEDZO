@@ -7,6 +7,7 @@ import '../../core/constants/app_constants.dart';
 import '../../data/models/order_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/app_button.dart';
+import 'order_chat_screen.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
   final String orderId;
@@ -46,13 +47,74 @@ class OrderTrackingScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStatusCard(order),
-                const SizedBox(height: 20),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatusCard(order),
+                  const SizedBox(height: 20),
+                // ── OTP Verification Card ──
+                if (order.otpCode != null &&
+                    (order.status == OrderStatus.outForDelivery ||
+                     order.status == OrderStatus.picked))
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.warning.withValues(alpha: 0.1),
+                          AppColors.warning.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: AppShape.large,
+                      border: Border.all(
+                          color: AppColors.warning.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.pin_rounded,
+                              color: AppColors.warning, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Delivery OTP',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                order.otpCode!,
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 8,
+                                  color: AppColors.warning,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.shield_rounded,
+                            color: AppColors.warning, size: 20),
+                      ],
+                    ),
+                  ),
                 if (order.status == OrderStatus.picked ||
                     order.status == OrderStatus.outForDelivery) ...[
                   const Text(
@@ -79,6 +141,40 @@ class OrderTrackingScreen extends StatelessWidget {
                     width: double.infinity,
                   ),
                 ],
+                // Chat with driver button
+                if (order.driverId != null &&
+                    order.status != OrderStatus.delivered &&
+                    order.status != OrderStatus.cancelled) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OrderChatScreen(
+                              orderId: order.id,
+                              currentUserId: order.customerId,
+                              currentUserRole: 'customer',
+                              otherUserName: 'Delivery Partner',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.chat_rounded),
+                      label: const Text('Chat with Driver'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: AppShape.medium),
+                      ),
+                    ),
+                  ),
+                ],
                 if (order.status == OrderStatus.delivered) ...[
                   const SizedBox(height: 20),
                   _buildSuccessBanner(),
@@ -87,6 +183,7 @@ class OrderTrackingScreen extends StatelessWidget {
               ],
             ),
           ),
+        ),
         );
       },
     );
@@ -94,29 +191,102 @@ class OrderTrackingScreen extends StatelessWidget {
 
   Future<void> _cancelOrder(BuildContext context, String orderId) async {
     HapticFeedback.heavyImpact();
+
+    final reasons = [
+      'Changed my mind',
+      'Found a better price',
+      'Order placed by mistake',
+      'Delivery time too long',
+      'Restaurant too far',
+      'Other',
+    ];
+
+    String? selectedReason;
+    final customCtrl = TextEditingController();
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancel Order?'),
-        content: const Text('Are you sure you want to cancel this order?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('No'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.cancel_rounded, color: AppColors.error, size: 24),
+              SizedBox(width: 10),
+              Text('Cancel Order'),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Yes, Cancel',
-              style: TextStyle(color: AppColors.error),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Please let us know why you want to cancel:',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                ...reasons.map(
+                  (r) => RadioListTile<String>(
+                    title: Text(r, style: const TextStyle(fontSize: 14)),
+                    value: r,
+                    groupValue: selectedReason,
+                    activeColor: AppColors.primary,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (v) =>
+                        setDialogState(() => selectedReason = v),
+                  ),
+                ),
+                if (selectedReason == 'Other') ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: customCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'Tell us more...',
+                      hintStyle: const TextStyle(fontSize: 13),
+                      filled: true,
+                      fillColor: AppColors.surfaceVariant,
+                      border: OutlineInputBorder(
+                        borderRadius: AppShape.small,
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ],
             ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep Order'),
+            ),
+            ElevatedButton(
+              onPressed: selectedReason == null
+                  ? null
+                  : () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade300,
+              ),
+              child: const Text('Cancel Order'),
+            ),
+          ],
+        ),
       ),
     );
 
-    if (confirmed == true) {
-      await FirestoreService.cancelOrder(orderId);
+    if (confirmed == true && selectedReason != null) {
+      final reason = selectedReason == 'Other'
+          ? (customCtrl.text.trim().isNotEmpty
+              ? customCtrl.text.trim()
+              : 'Other')
+          : selectedReason!;
+      await FirestoreService.cancelOrder(orderId, reason: reason);
     }
   }
 

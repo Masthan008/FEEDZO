@@ -8,7 +8,8 @@ import '../../widgets/restaurant_card.dart';
 import '../restaurant/restaurant_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialQuery;
+  const SearchScreen({super.key, this.initialQuery});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -16,6 +17,17 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final _ctrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null) {
+      _ctrl.text = widget.initialQuery!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<RestaurantProvider>().setSearch(widget.initialQuery!);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -118,15 +130,21 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(width: 8),
             _FilterChip(
               label: 'Fast Delivery',
-              selected: false,
-              onTap: () {},
+              selected: rp.fastDeliveryOnly,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                rp.setFastDeliveryOnly(!rp.fastDeliveryOnly);
+              },
               icon: Icons.bolt_rounded,
             ),
             const SizedBox(width: 8),
             _FilterChip(
               label: 'Free Delivery',
-              selected: false,
-              onTap: () {},
+              selected: rp.freeDeliveryOnly,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                rp.setFreeDeliveryOnly(!rp.freeDeliveryOnly);
+              },
               icon: Icons.delivery_dining_rounded,
             ),
           ],

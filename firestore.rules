@@ -20,6 +20,18 @@ service cloud.firestore {
       return userDoc().status == 'approved';
     }
 
+    // ── SYSTEM ─────────────────────────────────────────
+    // Allow authenticated users to read and update counters for order IDs
+    match /system/{docId} {
+      allow read, write: if isAuth();
+    }
+
+    // ── BANNERS ────────────────────────────────────────
+    match /banners/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ── USERS ──────────────────────────────────────────
     match /users/{userId} {
       allow read: if isAuth() && (uid() == userId || isAdmin());
@@ -67,54 +79,88 @@ service cloud.firestore {
       );
     }
 
-    // ── ORDERS ─────────────────────────────────────────
-    match /orders/{orderId} {
-
-      // READ ACCESS — allow drivers to read unassigned preparing/ready orders
-      allow read: if isAuth() && (
-        isAdmin() ||
-        resource.data.customerId == uid() ||
-        resource.data.restaurantId == uid() ||
-        (isDriver() && resource.data.driverId == uid()) ||
-        (isDriver() && resource.data.status in ['placed', 'preparing', 'ready'])
-      );
-
-      // CREATE (CUSTOMER ONLY + APPROVED)
-      allow create: if isAuth() &&
-        isCustomer() &&
-        isApproved();
-
-      // UPDATE CONTROL
-      allow update: if isAuth() && (
-
-        // ADMIN: full control
-        isAdmin() ||
-
-        // CUSTOMER: can cancel, can rate
-        (
-           isCustomer() &&
-           resource.data.customerId == uid() &&
-           request.resource.data.diff(resource.data).changedKeys()
-             .hasOnly(['status', 'rating', 'ratingComment', 'updatedAt'])
-        ) ||
-
-        // RESTAURANT: update status, prepTime, acceptedAt, driverId, driverName, driverPhone
-        (
-          isRestaurant() &&
-          resource.data.restaurantId == uid() &&
-          request.resource.data.diff(resource.data).changedKeys()
-            .hasOnly(['status', 'prepTime', 'acceptedAt', 'driverId', 'driverName', 'driverPhone', 'updatedAt'])
-        ) ||
-
-        // DRIVER CLAIM + UPDATE
-        (
-          isDriver() &&
-          (
-            (!('driverId' in resource.data) || resource.data.driverId == null) ? request.resource.data.driverId == uid() : resource.data.driverId == uid()
-          )
-        )
-      );
+  // ── ORDERS ─────────────────────────────────────────
+  match /orders/{orderId} {
+    // Validation helpers
+    function isValidOrder() {
+      return request.resource.data.totalAmount > 0 &&
+             request.resource.data.totalAmount is number &&
+             request.resource.data.items is list &&
+             request.resource.data.items.size() > 0 &&
+             request.resource.data.customerId == uid();
     }
+    function isValidScheduledOrder() {
+      return !('scheduledFor' in request.resource.data) ||
+             (request.resource.data.scheduledFor is timestamp &&
+              request.resource.data.scheduledFor > request.time);
+    }
+    function isValidRatingUpdate() {
+      return !('rating' in request.resource.data) ||
+             (request.resource.data.rating >= 1 && request.resource.data.rating <= 5);
+    }
+
+    // READ ACCESS — allow drivers to read unassigned preparing/ready orders
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.customerId == uid() ||
+      resource.data.restaurantId == uid() ||
+      (isDriver() && resource.data.driverId == uid()) ||
+      (isDriver() && resource.data.status in ['placed', 'preparing', 'ready'])
+    );
+
+    // CREATE (CUSTOMER ONLY + APPROVED) - with validation
+    allow create: if isAuth() &&
+      isCustomer() &&
+      isApproved() &&
+      isValidOrder() &&
+      isValidScheduledOrder();
+
+    // UPDATE CONTROL - with validation for scheduling and ratings
+    allow update: if isAuth() && (
+
+      // ADMIN: full control
+      isAdmin() ||
+
+      // CUSTOMER: can cancel, can rate, can add tip/instructions
+      (
+        isCustomer() &&
+        resource.data.customerId == uid() &&
+        isValidScheduledOrder() &&
+        isValidRatingUpdate() &&
+        request.resource.data.diff(resource.data).changedKeys()
+        .hasOnly(['status', 'rating', 'ratingComment', 'updatedAt',
+                  'tipAmount', 'deliveryInstructions', 'cancellationReason',
+                  'couponCode', 'discount', 'scheduledFor'])
+      ) ||
+
+      // RESTAURANT: update status, prepTime, acceptedAt, driverId, driverName, driverPhone
+      (
+        isRestaurant() &&
+        resource.data.restaurantId == uid() &&
+        request.resource.data.diff(resource.data).changedKeys()
+        .hasOnly(['status', 'prepTime', 'acceptedAt', 'driverId', 'driverName', 'driverPhone', 'updatedAt'])
+      ) ||
+
+      // DRIVER CLAIM OR REJECT (Unassigned Orders)
+      (
+        isDriver() &&
+        (!('driverId' in resource.data) || resource.data.driverId == null) &&
+        (
+          // Rejecting (updating only rejectedBy)
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['rejectedBy']) ||
+          // Claiming (setting driverId to their uid)
+          request.resource.data.driverId == uid()
+        )
+      ) ||
+      
+      // DRIVER UPDATE (Already Assigned Active Orders)
+      (
+        isDriver() &&
+        resource.data.driverId == uid() &&
+        request.resource.data.driverId == uid()
+      )
+    );
+  }
 
     // ── SETTLEMENTS ────────────────────────────────────
     match /settlements/{docId} {
@@ -158,5 +204,275 @@ service cloud.firestore {
 
       allow create: if isAuth() && isAdmin();
     }
+
+    // ═══════════════════════════════════════════════════
+    // NEW COLLECTIONS — Phase 1+
+    // ═══════════════════════════════════════════════════
+
+    // ── COUPONS ─────────────────────────────────────────
+    // Admin creates/manages coupons; customers + restaurants can read active ones
+    match /coupons/{couponId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && isAdmin();
+    }
+
+    // ── FAVORITES ───────────────────────────────────────
+    // Each user has a sub-doc: favorites/{userId}
+    // Customers can read/write only their own favorites
+    match /favorites/{userId} {
+      allow read: if isAuth() && (uid() == userId || isAdmin());
+      allow create, update: if isAuth() && uid() == userId;
+      allow delete: if isAuth() && (uid() == userId || isAdmin());
+    }
+
+// ── REVIEWS ─────────────────────────────────────────
+  // Customers create reviews; restaurants + admin can read; restaurants can reply
+  match /reviews/{reviewId} {
+    // Validation: Rating must be 1-5, comment length limits
+    function isValidReview() {
+      return request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+             request.resource.data.rating is int &&
+             request.resource.data.comment.size() <= 500 &&
+             request.resource.data.restaurantId is string &&
+             request.resource.data.orderId is string;
+    }
+    function isValidReply() {
+      return request.resource.data.reply.size() <= 500;
+    }
+    
+    allow read: if isAuth();
+    allow create: if isAuth() && isCustomer() && isValidReview();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      // Restaurant owner can add a reply
+      (isRestaurant() && isValidReply() &&
+       request.resource.data.diff(resource.data).changedKeys().hasOnly(['reply', 'repliedAt']))
+    );
+    allow delete: if isAuth() && isAdmin();
+  }
+      allow read: if isAuth();
+      allow create: if isAuth() && isCustomer();
+      allow update: if isAuth() && (
+        isAdmin() ||
+        // Restaurant owner can add a reply
+        (isRestaurant() &&
+         request.resource.data.diff(resource.data).changedKeys().hasOnly(['reply', 'repliedAt']))
+      );
+      allow delete: if isAuth() && isAdmin();
+    }
+
+    // ── CHAT MESSAGES ───────────────────────────────────
+    // Customer ↔ Driver real-time chat during active delivery
+    match /chat_messages/{messageId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.senderId == uid() ||
+        resource.data.recipientId == uid()
+      );
+      allow create: if isAuth() && (
+        isCustomer() || isDriver()
+      );
+      allow update: if isAuth() && (
+        isAdmin() ||
+        // Recipient can mark as read
+        (resource.data.recipientId == uid() &&
+         request.resource.data.diff(resource.data).changedKeys().hasOnly(['isRead']))
+      );
+    }
+
+    // ── INCENTIVES ──────────────────────────────────────
+    // Admin creates incentives (peak pay, challenges); drivers can read
+    match /incentives/{incentiveId} {
+      allow read: if isAuth() && (isAdmin() || isDriver());
+      allow create, update, delete: if isAuth() && isAdmin();
+    }
+
+    // ── REFUNDS ─────────────────────────────────────────
+    // Customers create refund requests; admin manages them
+    match /refunds/{refundId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.customerId == uid()
+      );
+      allow create: if isAuth() && isCustomer();
+      allow update: if isAuth() && isAdmin();
+      allow delete: if isAuth() && isAdmin();
+    }
+
+    // ── SUPPORT TICKETS ─────────────────────────────────
+    // Customers create support tickets; admin manages them
+    match /support_tickets/{ticketId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.customerId == uid()
+      );
+      allow create: if isAuth() && (isCustomer() || isDriver() || isRestaurant());
+      allow update: if isAuth() && (
+        isAdmin() ||
+        // Creator can add follow-up messages
+        (resource.data.customerId == uid() &&
+         request.resource.data.diff(resource.data).changedKeys().hasOnly(['messages', 'updatedAt']))
+      );
+      allow delete: if isAuth() && isAdmin();
+// ── SEARCH HISTORY ────────────────────────────────────
+  // Customers can save recent searches; auto-cleanup after 30 days
+  match /search_history/{historyId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.customerId == uid()
+    );
+    allow create: if isAuth() && isCustomer();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      (resource.data.customerId == uid() &&
+       request.resource.data.diff(resource.data).changedKeys().hasOnly(['searchCount', 'lastSearchedAt']))
+    );
+    allow delete: if isAuth() && (
+      isAdmin() ||
+      resource.data.customerId == uid()
+    );
+  }
+
+  // ── DEVICE MANAGEMENT ───────────────────────────────
+  // Track customer devices for push notifications and security
+  match /devices/{deviceId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+    allow create: if isAuth();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+    allow delete: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+  }
+
+  // ── PRIVACY SETTINGS ──────────────────────────────────
+  // GDPR compliance - customer controls over their data
+  match /privacy_settings/{userId} {
+    function isValidPrivacySettings() {
+      return request.resource.data.dataSharing is bool &&
+             request.resource.data.analytics is bool &&
+             request.resource.data.marketingEmails is bool &&
+             request.resource.data.pushNotifications is bool &&
+             request.resource.data.locationTracking is bool &&
+             request.resource.data.updatedAt is timestamp;
+    }
+    
+    allow read: if isAuth() && (uid() == userId || isAdmin());
+    allow create: if isAuth() && uid() == userId && isValidPrivacySettings();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      (uid() == userId &&
+       isValidPrivacySettings() &&
+       request.resource.data.diff(resource.data).changedKeys().hasOnly([
+         'dataSharing', 'analytics', 'marketingEmails', 'pushNotifications',
+         'locationTracking', 'updatedAt'
+       ]))
+    );
+  }
+
+  // ── MARKETING PREFERENCES ───────────────────────────
+  // Customer communication preferences and subscription status
+  match /marketing_preferences/{userId} {
+    function isValidMarketingPrefs() {
+      return request.resource.data.emailSubscribed is bool &&
+             request.resource.data.pushSubscribed is bool &&
+             request.resource.data.smsSubscribed is bool &&
+             request.resource.data.promoFrequency in ['daily', 'weekly', 'monthly', 'never'] &&
+             request.resource.data.updatedAt is timestamp;
+    }
+    
+    allow read: if isAuth() && (uid() == userId || isAdmin());
+    allow create: if isAuth() && uid() == userId && isValidMarketingPrefs();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      (uid() == userId &&
+       isValidMarketingPrefs() &&
+       request.resource.data.diff(resource.data).changedKeys().hasOnly([
+         'emailSubscribed', 'pushSubscribed', 'smsSubscribed',
+         'preferredCategories', 'promoFrequency', 'updatedAt'
+       ]))
+    );
+  }
+
+  // ── BANNERS ─────────────────────────────────────────
+  // Admin manages banners; customers can view active ones
+  match /banners/{bannerId} {
+    // READ: Customers can read active banners, admin can read all
+    allow read: if isAuth() && (
+      isAdmin() ||
+      (isCustomer() && resource.data.status == 'active')
+    );
+    
+    // CREATE/UPDATE/DELETE: Only admin
+    allow create: if isAuth() && isAdmin();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+// ═══════════════════════════════════════════════════
+// LOYALTY PROGRAM COLLECTIONS — Customer Phase 1
+// ═══════════════════════════════════════════════════
+
+  // ── LOYALTY POINTS ──────────────────────────────────
+  // Customer loyalty points balance and tier status
+  match /loyalty_points/{userId} {
+    function isValidLoyaltyPoints() {
+      return request.resource.data.totalPoints >= 0 &&
+             request.resource.data.totalPoints is int &&
+             request.resource.data.currentTier in ['Bronze', 'Silver', 'Gold', 'Platinum'] &&
+             request.resource.data.lastUpdatedAt is timestamp;
+    }
+    
+    allow read: if isAuth() && (uid() == userId || isAdmin());
+    allow create: if isAuth() && isCustomer() && uid() == userId && isValidLoyaltyPoints();
+    // Only admins can credit points; customers cannot modify
+    allow update: if isAuth() && (
+      isAdmin() && isValidLoyaltyPoints() ||
+      // Customer can only view (read-only balance) - lastUpdatedAt can be touched by system
+      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastUpdatedAt']))
+    );
+  }
+
+  // ── POINT TRANSACTIONS ──────────────────────────────
+  // Detailed history of points earned/redeemed
+  match /point_transactions/{transactionId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+    // Only admin or automated system can create transactions
+    allow create: if isAuth() && (
+      isAdmin()
+      // Note: Could also allow automated function with custom claims
+    );
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── REWARDS ───────────────────────────────────────────
+  // Available rewards catalog (admin managed)
+  match /rewards/{rewardId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── REWARD REDEMPTIONS ───────────────────────────────
+  // Customer reward redemption records
+  match /reward_redemptions/{redemptionId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+    allow create: if isAuth() && isCustomer();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
   }
 }

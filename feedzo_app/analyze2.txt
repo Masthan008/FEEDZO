@@ -1,0 +1,49 @@
+﻿Analyzing feedzo_app...                                         
+
+   info - Unnecessary use of multiple underscores - lib\screens\cart\cart_screen.dart:235:47 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\cart\cart_screen.dart:235:51 - unnecessary_underscores
+warning - Unused import: 'package:cached_network_image/cached_network_image.dart' - lib\screens\home\home_screen.dart:4:8 - unused_import
+warning - Unused import: '../../core/constants/app_constants.dart' - lib\screens\home\home_screen.dart:6:8 - unused_import
+   info - Unnecessary use of multiple underscores - lib\screens\home\home_screen.dart:64:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\home\home_screen.dart:100:55 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\home\home_screen.dart:100:59 - unnecessary_underscores
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\home\home_screen.dart:138:23 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\screens\home\home_screen.dart:414:26 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\home\home_screen.dart:414:30 - unnecessary_underscores
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\orders\order_tracking_screen.dart:136:21 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\orders\order_tracking_screen.dart:140:21 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\screens\orders\orders_screen.dart:217:39 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\orders\orders_screen.dart:217:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\restaurant\restaurant_screen.dart:147:30 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\restaurant\restaurant_screen.dart:147:34 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\restaurant\restaurant_screen.dart:458:40 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\restaurant\restaurant_screen.dart:458:44 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\search\search_screen.dart:76:44 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\search\search_screen.dart:76:48 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\search\search_screen.dart:78:57 - unnecessary_underscores
+warning - The value of the field '_cloudName' isn't used - lib\services\cloudinary_service.dart:9:16 - unused_field
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\services\firestore_service.dart:232:9 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\services\supabase_service.dart:45:9 - use_null_aware_elements
+   info - Unnecessary use of multiple underscores - lib\widgets\restaurant_card.dart:99:48 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\restaurant_card.dart:100:48 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\restaurant_card.dart:100:52 - unnecessary_underscores
+warning - The declaration '_Tag' isn't referenced - lib\widgets\restaurant_card.dart:329:7 - unused_element
+
+flutter : 28 issues 
+found. (ran in 4.0s)
+At line:1 char:1
++ flutter analyze 
+--no-pub 2>&1 | Out-File 
+-FilePath analyze2.txt 
+-Enco ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (28 issues found. (r   
+ an in 4.0s):String)     
+[], RemoteException
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 

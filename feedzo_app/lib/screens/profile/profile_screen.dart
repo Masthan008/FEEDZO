@@ -5,10 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 
 import 'address_management_screen.dart';
+import 'help_support_screen.dart';
+import 'notifications_screen.dart';
+import 'loyalty_screen.dart';
+import 'privacy_settings_screen.dart';
+import 'marketing_preferences_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -19,7 +25,7 @@ class ProfileScreen extends StatelessWidget {
     final user = auth.user;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -91,7 +97,11 @@ class ProfileScreen extends StatelessWidget {
                                     color: AppColors.primary,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
                                 ),
                               ],
                             ),
@@ -114,8 +124,11 @@ class ProfileScreen extends StatelessWidget {
                                     user!.email.isNotEmpty)
                                   Row(
                                     children: [
-                                      const Icon(Icons.email_outlined,
-                                          color: Colors.white70, size: 14),
+                                      const Icon(
+                                        Icons.email_outlined,
+                                        color: Colors.white70,
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
@@ -134,8 +147,11 @@ class ProfileScreen extends StatelessWidget {
                                     user!.phone.isNotEmpty)
                                   Row(
                                     children: [
-                                      const Icon(Icons.phone_outlined,
-                                          color: Colors.white70, size: 14),
+                                      const Icon(
+                                        Icons.phone_outlined,
+                                        color: Colors.white70,
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 6),
                                       Text(
                                         user.phone,
@@ -150,25 +166,38 @@ class ProfileScreen extends StatelessWidget {
                                 if (user?.dob != null && user!.dob.isNotEmpty)
                                   Row(
                                     children: [
-                                      const Icon(Icons.cake_outlined,
-                                          color: Colors.white70, size: 14),
+                                      const Icon(
+                                        Icons.cake_outlined,
+                                        color: Colors.white70,
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 6),
                                       Text(
                                         user.dob,
-                                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 const SizedBox(height: 2),
-                                if (user?.gender != null && user!.gender.isNotEmpty)
+                                if (user?.gender != null &&
+                                    user!.gender.isNotEmpty)
                                   Row(
                                     children: [
-                                      const Icon(Icons.people_outline,
-                                          color: Colors.white70, size: 14),
+                                      const Icon(
+                                        Icons.people_outline,
+                                        color: Colors.white70,
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 6),
                                       Text(
                                         user.gender,
-                                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -189,11 +218,9 @@ class ProfileScreen extends StatelessWidget {
               child: Container(
                 width: double.infinity,
                 height: 20,
-                decoration: const BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 ),
               ),
             ),
@@ -237,7 +264,57 @@ class ProfileScreen extends StatelessWidget {
                 _SettingsItem(
                   icon: Icons.notifications_outlined,
                   label: 'Notifications',
-                  onTap: () => _showNotificationSettings(context),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  ),
+                ),
+                // Dark mode toggle
+                Builder(
+                  builder: (ctx) {
+                    final theme = ctx.watch<ThemeProvider>();
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: AppShape.small,
+                            ),
+                            child: Icon(
+                              theme.isDark
+                                  ? Icons.dark_mode_rounded
+                                  : Icons.light_mode_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Text(
+                              'Dark Mode',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Switch(
+                            value: theme.isDark,
+                            activeColor: AppColors.primary,
+                            onChanged: (_) => theme.toggleTheme(),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
                 _SettingsItem(
                   icon: Icons.payment_outlined,
@@ -247,7 +324,12 @@ class ProfileScreen extends StatelessWidget {
                 _SettingsItem(
                   icon: Icons.help_outline_rounded,
                   label: 'Help & Support',
-                  onTap: () => _showHelpSupport(context),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HelpSupportScreen(),
+                    ),
+                  ),
                 ),
                 _SettingsItem(
                   icon: Icons.privacy_tip_outlined,
@@ -274,6 +356,48 @@ class ProfileScreen extends StatelessWidget {
                     );
                   },
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // ── Account Services (Phase 1 & 2 Features) ──
+            _Section(
+              title: 'Account Services',
+              icon: Icons.account_box_rounded,
+              children: [
+                _SettingsItem(
+                  icon: Icons.star,
+                  iconColor: AppColors.warning,
+                  label: 'Loyalty Program',
+                  subtitle: 'Points, tiers & rewards',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoyaltyScreen()),
+                  ),
+                ),
+                _SettingsItem(
+                  icon: Icons.privacy_tip,
+                  iconColor: AppColors.primary,
+                  label: 'Privacy Settings',
+                  subtitle: 'GDPR & data controls',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PrivacySettingsScreen(),
+                    ),
+                  ),
+                ),
+      _SettingsItem(
+        icon: Icons.notifications_active,
+        iconColor: AppColors.primary,
+        label: 'Marketing Preferences',
+        subtitle: 'Communication controls',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MarketingPreferencesScreen()),
+        ),
+      ),
+
               ],
             ),
             const SizedBox(height: 12),
@@ -313,8 +437,7 @@ class ProfileScreen extends StatelessWidget {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('Logout'),
-                      content:
-                          const Text('Are you sure you want to logout?'),
+                      content: const Text('Are you sure you want to logout?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
@@ -439,7 +562,10 @@ class ProfileScreen extends StatelessWidget {
     if (userId == null) return;
     try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
       if (pickedFile == null) return;
 
       if (context.mounted) {
@@ -451,7 +577,7 @@ class ProfileScreen extends StatelessWidget {
       }
 
       final url = await CloudinaryService.uploadImage(File(pickedFile.path));
-      
+
       if (context.mounted) {
         Navigator.pop(context); // close dialog
       }
@@ -460,7 +586,9 @@ class ProfileScreen extends StatelessWidget {
         await FirestoreService.updateUserProfile(userId, {'avatarUrl': url});
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile image updated successfully!')),
+            const SnackBar(
+              content: Text('Profile image updated successfully!'),
+            ),
           );
         }
       } else {
@@ -472,55 +600,11 @@ class ProfileScreen extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
-  }
-
-  // ── Notification Settings ──
-  void _showNotificationSettings(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Notification Settings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _ToggleTile(
-              label: 'Order Updates',
-              subtitle: 'Get notified about your order status',
-              value: true,
-            ),
-            _ToggleTile(
-              label: 'Promotions & Offers',
-              subtitle: 'Receive deals and discount notifications',
-              value: true,
-            ),
-            _ToggleTile(
-              label: 'AI Recommendations',
-              subtitle: 'Personalized food suggestions',
-              value: true,
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
   }
 
   // ── Payment Methods ──
@@ -559,57 +643,6 @@ class ProfileScreen extends StatelessWidget {
               icon: Icons.money_rounded,
               label: 'Cash on Delivery',
               subtitle: 'Pay when you receive',
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Help & Support ──
-  void _showHelpSupport(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Help & Support',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _SettingsItem(
-              icon: Icons.chat_bubble_outline_rounded,
-              label: 'Chat with us',
-              onTap: () {},
-            ),
-            _SettingsItem(
-              icon: Icons.email_outlined,
-              label: 'Email Support',
-              subtitle: 'support@feedzo.com',
-              onTap: () {},
-            ),
-            _SettingsItem(
-              icon: Icons.phone_outlined,
-              label: 'Call Support',
-              subtitle: '+91 800 FEEDZO',
-              onTap: () {},
-            ),
-            _SettingsItem(
-              icon: Icons.description_outlined,
-              label: 'FAQs',
-              onTap: () {},
             ),
             const SizedBox(height: 12),
           ],
@@ -688,7 +721,7 @@ class _Section extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: AppShape.large,
         boxShadow: AppShadows.subtle,
       ),
@@ -703,10 +736,10 @@ class _Section extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -742,27 +775,29 @@ class _SettingsItem extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color:
-              (iconColor ?? AppColors.textSecondary).withValues(alpha: 0.1),
+          color: (iconColor ?? AppColors.textSecondary).withValues(alpha: 0.1),
           borderRadius: AppShape.small,
         ),
-        child: Icon(icon,
-            color: iconColor ?? AppColors.textSecondary, size: 20),
+        child: Icon(
+          icon,
+          color: iconColor ?? AppColors.textSecondary,
+          size: 20,
+        ),
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textPrimary,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary,
               ),
             )
           : null,
@@ -814,18 +849,15 @@ class _ToggleTileState extends State<_ToggleTile> {
       activeThumbColor: AppColors.primary,
       title: Text(
         widget.label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textPrimary,
         ),
       ),
       subtitle: Text(
         widget.subtitle,
-        style: const TextStyle(
-          fontSize: 12,
-          color: AppColors.textSecondary,
-        ),
+        style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary),
       ),
     );
   }
@@ -856,18 +888,15 @@ class _PaymentMethodTile extends StatelessWidget {
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
-          fontSize: 12,
-          color: AppColors.textSecondary,
-        ),
+        style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary),
       ),
       trailing: const Icon(
         Icons.chevron_right_rounded,

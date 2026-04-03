@@ -13,6 +13,7 @@ class Restaurant {
   final String address;
   final List<String> tags;
   final List<MenuItem> menu;
+  final bool isRecommended;
 
   const Restaurant({
     required this.id,
@@ -29,6 +30,7 @@ class Restaurant {
     required this.address,
     required this.tags,
     this.menu = const [],
+    this.isRecommended = false,
   });
 
   factory Restaurant.fromMap(Map<String, dynamic> map, String id) {
@@ -55,8 +57,9 @@ class Restaurant {
           ? (map['menu'] as List)
               .whereType<Map<String, dynamic>>()
               .map((m) => MenuItem.fromMap(m, m['id']?.toString() ?? ''))
-              .toList()
+               .toList()
           : [],
+      isRecommended: map['isRecommended'] == true || map['isRecommended'] == 'true',
     );
   }
 
@@ -83,6 +86,40 @@ class Restaurant {
       : (imageUrls.isNotEmpty ? imageUrls.first : '');
 }
 
+/// Represents an add-on option for a menu item (e.g. "Extra cheese ₹30").
+class MenuAddon {
+  final String name;
+  final double price;
+
+  const MenuAddon({required this.name, required this.price});
+
+  factory MenuAddon.fromMap(Map<String, dynamic> map) {
+    return MenuAddon(
+      name: map['name']?.toString() ?? '',
+      price: (map['price'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {'name': name, 'price': price};
+}
+
+/// Represents a variant option for a menu item (e.g. "Large +₹50").
+class MenuVariant {
+  final String name; // "Small", "Medium", "Large"
+  final double priceAdjustment; // +₹0, +₹30, +₹60
+
+  const MenuVariant({required this.name, this.priceAdjustment = 0});
+
+  factory MenuVariant.fromMap(Map<String, dynamic> map) {
+    return MenuVariant(
+      name: map['name']?.toString() ?? '',
+      priceAdjustment: (map['priceAdjustment'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {'name': name, 'priceAdjustment': priceAdjustment};
+}
+
 class MenuItem {
   final String id;
   final String restaurantId;
@@ -96,6 +133,15 @@ class MenuItem {
   final bool isAvailable;
   final bool isBestseller;
 
+  // ── New fields for production readiness ──
+  final List<MenuAddon> addons;
+  final List<MenuVariant> variants;
+  final List<String> dietaryTags; // "Gluten-free", "Jain", "Keto"
+  final int? prepTimeMinutes;
+  final int? calories;
+  final int spiceLevel; // 0-5
+  final int orderCount; // popularity metric
+
   MenuItem({
     required this.id,
     required this.restaurantId,
@@ -108,6 +154,13 @@ class MenuItem {
     required this.category,
     this.isAvailable = true,
     this.isBestseller = false,
+    this.addons = const [],
+    this.variants = const [],
+    this.dietaryTags = const [],
+    this.prepTimeMinutes,
+    this.calories,
+    this.spiceLevel = 0,
+    this.orderCount = 0,
   });
 
   factory MenuItem.fromMap(Map<String, dynamic> map, String id) {
@@ -123,6 +176,20 @@ class MenuItem {
       category: map['category']?.toString() ?? '',
       isAvailable: map['isAvailable'] == null || map['isAvailable'] == true || map['isAvailable'] == 'true',
       isBestseller: map['isBestseller'] == true || map['isBestseller'] == 'true',
+      // New fields
+      addons: (map['addons'] as List?)
+              ?.map((a) => MenuAddon.fromMap(a as Map<String, dynamic>))
+              .toList() ??
+          [],
+      variants: (map['variants'] as List?)
+              ?.map((v) => MenuVariant.fromMap(v as Map<String, dynamic>))
+              .toList() ??
+          [],
+      dietaryTags: (map['dietaryTags'] as List?)?.cast<String>() ?? [],
+      prepTimeMinutes: (map['prepTimeMinutes'] as num?)?.toInt(),
+      calories: (map['calories'] as num?)?.toInt(),
+      spiceLevel: (map['spiceLevel'] as num?)?.toInt() ?? 0,
+      orderCount: (map['orderCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -138,8 +205,19 @@ class MenuItem {
       'category': category,
       'isAvailable': isAvailable,
       'isBestseller': isBestseller,
+      if (addons.isNotEmpty) 'addons': addons.map((a) => a.toMap()).toList(),
+      if (variants.isNotEmpty)
+        'variants': variants.map((v) => v.toMap()).toList(),
+      if (dietaryTags.isNotEmpty) 'dietaryTags': dietaryTags,
+      if (prepTimeMinutes != null) 'prepTimeMinutes': prepTimeMinutes,
+      if (calories != null) 'calories': calories,
+      if (spiceLevel > 0) 'spiceLevel': spiceLevel,
+      if (orderCount > 0) 'orderCount': orderCount,
     };
   }
 
   double get discountedPrice => price * (1 - discount / 100);
+
+  /// Whether this item has customization options.
+  bool get hasCustomization => addons.isNotEmpty || variants.isNotEmpty;
 }

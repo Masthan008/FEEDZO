@@ -138,6 +138,31 @@ class _AvailableOrderList extends StatelessWidget {
     }
   }
 
+  Future<void> _rejectOrder(BuildContext context, String orderId) async {
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+        'rejectedBy': FieldValue.arrayUnion([uid]),
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order rejected'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reject: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -155,7 +180,8 @@ class _AvailableOrderList extends StatelessWidget {
         // Filter only unassigned orders (no driverId)
         var docs = snap.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['driverId'] == null;
+          final rejectedBy = List<String>.from(data['rejectedBy'] as List<dynamic>? ?? []);
+          return data['driverId'] == null && !rejectedBy.contains(uid);
         }).toList();
 
         // Sort by createdAt descending
@@ -216,6 +242,7 @@ class _AvailableOrderList extends StatelessWidget {
               orderId: doc.id,
               data: d,
               onAccept: () => _acceptOrder(context, doc.id),
+              onReject: () => _rejectOrder(context, doc.id),
             );
           },
         );
@@ -228,10 +255,12 @@ class _AvailableOrderCard extends StatelessWidget {
   final String orderId;
   final Map<String, dynamic> data;
   final VoidCallback onAccept;
+  final VoidCallback onReject;
   const _AvailableOrderCard({
     required this.orderId,
     required this.data,
     required this.onAccept,
+    required this.onReject,
   });
 
   @override
@@ -244,6 +273,16 @@ class _AvailableOrderCard extends StatelessWidget {
     final shortId = orderId.length > 6
         ? orderId.substring(orderId.length - 6).toUpperCase()
         : orderId.toUpperCase();
+        
+    final createdAt = data['createdAt'] as Timestamp?;
+    String timeStr = '';
+    if (createdAt != null) {
+      final t = createdAt.toDate();
+      final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
+      final amPm = t.hour >= 12 ? 'PM' : 'AM';
+      final m = t.minute.toString().padLeft(2, '0');
+      timeStr = 'Ordered at: $h:$m $amPm';
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -365,6 +404,21 @@ class _AvailableOrderCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (timeStr.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.access_time_rounded, size: 14, color: AppColors.textHint),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      timeStr,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textHint, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 14),
             // Amount + Accept button
             Row(
@@ -378,21 +432,37 @@ class _AvailableOrderCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    HapticFeedback.heavyImpact();
-                    onAccept();
-                  },
-                  icon: const Icon(Icons.check_rounded, size: 18),
-                  label: const Text('Accept Order'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppShape.round,
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        onReject();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: AppShape.round),
+                      ),
+                      child: const Text('Reject', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.heavyImpact();
+                        onAccept();
+                      },
+                      icon: const Icon(Icons.check_rounded, size: 16),
+                      label: const Text('Accept', style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: AppShape.round),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -493,6 +563,16 @@ class _OrderCard extends StatelessWidget {
     final shortId = orderId.length > 6
         ? orderId.substring(orderId.length - 6).toUpperCase()
         : orderId.toUpperCase();
+
+    final createdAt = data['createdAt'] as Timestamp?;
+    String timeStr = '';
+    if (createdAt != null) {
+      final t = createdAt.toDate();
+      final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
+      final amPm = t.hour >= 12 ? 'PM' : 'AM';
+      final m = t.minute.toString().padLeft(2, '0');
+      timeStr = 'Ordered at: $h:$m $amPm';
+    }
 
     Color statusColor;
     Color statusBgColor;
@@ -616,6 +696,21 @@ class _OrderCard extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Divider(height: 1, color: AppColors.border),
               ),
+              if (timeStr.isNotEmpty) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 14, color: AppColors.textHint),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        timeStr,
+                        style: const TextStyle(fontSize: 12, color: AppColors.textHint, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 children: [
                   Text(

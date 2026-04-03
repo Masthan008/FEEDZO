@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
 import '../data/models/restaurant_model.dart';
+import '../providers/auth_provider.dart';
+import '../services/firestore_service.dart';
 
 class RestaurantCard extends StatefulWidget {
   final Restaurant restaurant;
@@ -120,29 +123,37 @@ class _RestaurantCardState extends State<RestaurantCard>
                         ),
                       ),
                     ),
-                  // Top-Left Offer Badge
-                  Positioned(
-                    top: 12,
-                    left: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(8),
-                          bottomRight: Radius.circular(8),
+                  // Top-Left Offer Badge (only if restaurant has tags)
+                  if (r.tags.isNotEmpty)
+                    Positioned(
+                      top: 12,
+                      left: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(8),
+                            bottomRight: Radius.circular(8),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        r.tags.isNotEmpty ? r.tags.first.toUpperCase() : '20% OFF',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                        child: Text(
+                          r.tags.first.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ),
+
+                  // Top-Right Favorite Heart Button
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: _FavoriteButton(restaurantId: r.id),
                   ),
                   
                   // Bottom-Left Rating Badge (overlaid on image)
@@ -230,6 +241,83 @@ class _RestaurantCardState extends State<RestaurantCard>
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Favorite Heart Button ─────────────────────────────────────────────────────
+class _FavoriteButton extends StatefulWidget {
+  final String restaurantId;
+  const _FavoriteButton({required this.restaurantId});
+
+  @override
+  State<_FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends State<_FavoriteButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _bounce;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _bounce = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
+    if (user == null) return const SizedBox.shrink();
+
+    final isFav = user.isFavoriteRestaurant(widget.restaurantId);
+
+    return GestureDetector(
+      onTap: _loading
+          ? null
+          : () async {
+              HapticFeedback.lightImpact();
+              setState(() => _loading = true);
+              _ctrl.forward().then((_) => _ctrl.reverse());
+              try {
+                await FirestoreService.toggleFavoriteRestaurant(
+                    user.id, widget.restaurantId);
+              } catch (_) {}
+              if (mounted) setState(() => _loading = false);
+            },
+      child: AnimatedBuilder(
+        animation: _bounce,
+        builder: (_, child) => Transform.scale(
+          scale: _bounce.value,
+          child: child,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            shape: BoxShape.circle,
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
+          ),
+          child: Icon(
+            isFav ? Icons.favorite : Icons.favorite_border,
+            color: isFav ? Colors.red : Colors.grey.shade600,
+            size: 20,
           ),
         ),
       ),

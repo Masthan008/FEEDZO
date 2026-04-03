@@ -1,0 +1,25 @@
+﻿Analyzing feedzo_admin...                                       
+
+warning - The value of the local variable 'ap' isn't used - lib\screens\ai_insights_screen.dart:14:11 - unused_local_variable
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\coupons_screen.dart:260:27 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\coupons_screen.dart:370:21 - deprecated_member_use
+warning - The value of the local variable 'customerId' isn't used - lib\screens\orders_screen.dart:143:11 - unused_local_variable
+
+flutter : 4 issues 
+found. (ran in 2.1s)
+At line:1 char:1
++ flutter analyze 
+--no-pub 2>&1 | Out-File 
+-FilePath 
+analyze_admin2.txt ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (4 issues found. (ra   
+ n in 2.1s):String) [    
+], RemoteException
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 

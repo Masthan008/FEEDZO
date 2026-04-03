@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../data/models/order_model.dart';
 import '../services/firestore_service.dart';
 
@@ -27,11 +28,20 @@ class OrderProvider extends ChangeNotifier {
     });
   }
 
+  /// Generates a 4-digit OTP for delivery verification.
+  String _generateOtp() {
+    final rng = Random();
+    return (1000 + rng.nextInt(9000)).toString();
+  }
+
   Future<String> placeOrder(Order order) async {
     _isPlacing = true;
     notifyListeners();
     try {
-      final orderId = await FirestoreService.placeOrder(order);
+      // Auto-generate delivery OTP
+      final otpCode = _generateOtp();
+      final orderWithOtp = order.copyWith(otpCode: otpCode);
+      final orderId = await FirestoreService.placeOrder(orderWithOtp);
       _isPlacing = false;
       notifyListeners();
       return orderId;
