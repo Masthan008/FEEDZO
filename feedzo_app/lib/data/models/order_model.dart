@@ -95,6 +95,8 @@ class Order {
   final String paymentType; // 'cod' or 'online'
   final double? rating;
   final String? ratingComment;
+  final bool isRated;
+  final DateTime? ratedAt;
 
   // ── New fields for production readiness ──
   final String? couponCode;
@@ -139,6 +141,8 @@ class Order {
     this.paymentType = 'cod',
     this.rating,
     this.ratingComment,
+    this.isRated = false,
+    this.ratedAt,
     // New fields
     this.couponCode,
     this.discount = 0,
@@ -183,6 +187,8 @@ class Order {
       paymentType: map['paymentType'] as String? ?? 'cod',
       rating: (map['rating'] as num?)?.toDouble(),
       ratingComment: map['ratingComment'] as String?,
+      isRated: map['isRated'] as bool? ?? false,
+      ratedAt: (map['ratedAt'] as dynamic)?.toDate(),
       // New fields
       couponCode: map['couponCode'] as String?,
       discount: (map['discount'] as num?)?.toDouble() ?? 0,
@@ -231,6 +237,8 @@ class Order {
       'paymentType': paymentType,
       if (rating != null) 'rating': rating,
       if (ratingComment != null) 'ratingComment': ratingComment,
+      'isRated': isRated,
+      if (ratedAt != null) 'ratedAt': ratedAt,
       // New fields
       if (couponCode != null) 'couponCode': couponCode,
       if (discount > 0) 'discount': discount,
@@ -291,6 +299,8 @@ class Order {
     String? refundStatus,
     double? rating,
     String? ratingComment,
+    bool? isRated,
+    DateTime? ratedAt,
     String? paymentId,
     String? paymentStatus,
   }) {
@@ -313,6 +323,8 @@ class Order {
       paymentType: paymentType,
       rating: rating ?? this.rating,
       ratingComment: ratingComment ?? this.ratingComment,
+      isRated: isRated ?? this.isRated,
+      ratedAt: ratedAt ?? this.ratedAt,
       couponCode: couponCode ?? this.couponCode,
       discount: discount ?? this.discount,
       tipAmount: tipAmount ?? this.tipAmount,

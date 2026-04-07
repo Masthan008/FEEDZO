@@ -11,6 +11,7 @@ import '../orders/orders_screen.dart';
 import '../menu/menu_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../reports/reports_screen.dart';
+import '../reviews/restaurant_reviews_screen.dart';
 import '../auth/profile_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -30,7 +31,7 @@ class _HomeShellState extends State<HomeShell>
     OrdersScreen(),
     MenuScreen(),
     WalletScreen(),
-    ReportsScreen(),
+    RestaurantReviewsScreen(),
     ProfileScreen(),
   ];
 
@@ -115,9 +116,9 @@ class _HomeShellState extends State<HomeShell>
                   onTap: () => _onTap(3),
                 ),
                 _NavItem(
-                  icon: Icons.bar_chart_outlined,
-                  activeIcon: Icons.bar_chart_rounded,
-                  label: 'Reports',
+                  icon: Icons.rate_review_outlined,
+                  activeIcon: Icons.rate_review_rounded,
+                  label: 'Reviews',
                   isActive: _currentIndex == 4,
                   onTap: () => _onTap(4),
                 ),

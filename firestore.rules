@@ -221,31 +221,139 @@ service cloud.firestore {
       allow delete: if isAuth() && (uid() == userId || isAdmin());
     }
 
+// ═══════════════════════════════════════════════════
+// REVIEWS & RATINGS — Comprehensive Review System
+// ═══════════════════════════════════════════════════
+
 // ── REVIEWS ─────────────────────────────────────────
-  // Customers create reviews; restaurants + admin can read; restaurants can reply
-  match /reviews/{reviewId} {
-    // Validation: Rating must be 1-5, comment length limits
-    function isValidReview() {
-      return request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
-             request.resource.data.rating is int &&
-             request.resource.data.comment.size() <= 500 &&
-             request.resource.data.restaurantId is string &&
-             request.resource.data.orderId is string;
-    }
-    function isValidReply() {
-      return request.resource.data.reply.size() <= 500;
-    }
-    
-    allow read: if isAuth();
-    allow create: if isAuth() && isCustomer() && isValidReview();
-    allow update: if isAuth() && (
-      isAdmin() ||
-      // Restaurant owner can add a reply
-      (isRestaurant() && isValidReply() &&
-       request.resource.data.diff(resource.data).changedKeys().hasOnly(['reply', 'repliedAt']))
-    );
-    allow delete: if isAuth() && isAdmin();
+match /reviews/{reviewId} {
+  // Validation helpers
+  function isValidRating() {
+    return request.resource.data.rating >= 0.5 && 
+           request.resource.data.rating <= 5 &&
+           request.resource.data.rating is number;
   }
+  
+  function isValidReviewText() {
+    return request.resource.data.reviewText == null ||
+           (request.resource.data.reviewText is string &&
+            request.resource.data.reviewText.size() <= 1000);
+  }
+  
+  function isValidTags() {
+    return request.resource.data.tags == null ||
+           (request.resource.data.tags is list &&
+            request.resource.data.tags.size() <= 10);
+  }
+  
+  function isValidPhotoUrls() {
+    return request.resource.data.photoUrls == null ||
+           (request.resource.data.photoUrls is list &&
+            request.resource.data.photoUrls.size() <= 5);
+  }
+  
+  function isOrderDelivered(orderId) {
+    return get(/databases/$(database)/documents/orders/$(orderId)).data.status == 'delivered';
+  }
+  
+  function ownsOrder(orderId) {
+    return get(/databases/$(database)/documents/orders/$(orderId)).data.customerId == uid();
+  }
+  
+  // READ: All authenticated users can read reviews
+  allow read: if isAuth();
+  
+  // CREATE: Customer must own the order, order must be delivered
+  allow create: if isAuth() && isCustomer() &&
+    request.resource.data.customerId == uid() &&
+    request.resource.data.id == reviewId &&
+    isValidRating() &&
+    isValidReviewText() &&
+    isValidTags() &&
+    isValidPhotoUrls() &&
+    isOrderDelivered(request.resource.data.orderId) &&
+    ownsOrder(request.resource.data.orderId) &&
+    request.resource.data.targetType in ['restaurant', 'dish', 'driver'];
+  
+  // UPDATE: Owner can edit; Restaurant can reply; Admin can moderate
+  allow update: if isAuth() && (
+    // Owner editing their review
+    (resource.data.customerId == uid() &&
+     request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+       'reviewText', 'rating', 'tags', 'photoUrls', 'isEdited', 'editedAt'
+     ]) &&
+     isValidRating() &&
+     isValidReviewText() &&
+     isValidTags() &&
+     isValidPhotoUrls()) ||
+    // Restaurant responding to their review
+    (isRestaurant() &&
+     resource.data.targetType == 'restaurant' &&
+     resource.data.targetId == uid() &&
+     request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+       'restaurantResponse', 'restaurantResponseAt'
+     ]) &&
+     request.resource.data.restaurantResponse is string &&
+     request.resource.data.restaurantResponse.size() <= 500) ||
+    // Admin moderating
+    (isAdmin() &&
+     request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+       'isVisible', 'moderationReason'
+     ]))
+  );
+  
+  // DELETE: Admin or owner within 24 hours
+  allow delete: if isAuth() && (
+    isAdmin() ||
+    (resource.data.customerId == uid() &&
+     resource.data.createdAt.toMillis() > request.time.toMillis() - 86400000)
+  );
+}
+
+// ── RATING SUMMARIES ───────────────────────────────
+// Aggregate ratings for restaurants, dishes, drivers
+match /ratingSummaries/{summaryId} {
+  // READ: All authenticated users
+  allow read: if isAuth();
+  
+  // WRITE: Only system/cloud functions (calculated data)
+  allow create, update: if false;
+  
+  // DELETE: Only admin
+  allow delete: if isAuth() && isAdmin();
+}
+
+// ── HELPFUL REVIEWS (Subcollection) ────────────────
+match /reviews/{reviewId}/helpful/{userId} {
+  // READ: Authenticated users
+  allow read: if isAuth();
+  
+  // CREATE: User marking helpful (can't mark own review)
+  allow create: if isAuth() && 
+    userId == uid() &&
+    get(/databases/$(database)/documents/reviews/$(reviewId)).data.customerId != uid();
+  
+  // DELETE: User unmarking helpful
+  allow delete: if isAuth() && userId == uid();
+}
+
+// ── RESTAURANT REVIEW STATS ───────────────────────
+match /restaurants/{restaurantId}/reviewStats/{statsId} {
+  allow read: if true; // Public read
+  allow write: if false; // System only
+}
+
+// ── DRIVER REVIEW STATS ────────────────────────────
+match /drivers/{driverId}/reviewStats/{statsId} {
+  allow read: if isAuth();
+  allow write: if false; // System only
+}
+
+// ── DISH REVIEW STATS ──────────────────────────────
+match /menuItems/{dishId}/reviewStats/{statsId} {
+  allow read: if true; // Public read
+  allow write: if false; // System only
+}
 
     // ── CHAT MESSAGES ───────────────────────────────────
     // Customer ↔ Driver real-time chat during active delivery
@@ -459,6 +567,59 @@ service cloud.firestore {
     );
     allow create: if isAuth() && isCustomer();
     allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // DRIVER MULTI-ORDER ASSIGNMENT & NOTIFICATIONS
+  // ═══════════════════════════════════════════════════
+
+  // ── DRIVER NOTIFICATIONS ─────────────────────────────
+  // Real-time notifications for drivers (new orders, assignments, alerts)
+  match /driverNotifications/{notificationId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.driverId == uid()
+    );
+    
+    // Admin or system can create notifications
+    allow create: if isAuth() && (
+      isAdmin() ||
+      request.resource.data.driverId is string
+    );
+    
+    // Driver can mark as read; admin can update anything
+    allow update: if isAuth() && (
+      isAdmin() ||
+      (resource.data.driverId == uid() &&
+       request.resource.data.diff(resource.data).changedKeys().hasOnly([
+         'isRead', 'readAt', 'actionTaken', 'actionTakenAt'
+       ]))
+    );
+    
+    allow delete: if isAuth() && (
+      isAdmin() ||
+      resource.data.driverId == uid()
+    );
+  }
+
+  // ── DRIVER ASSIGNMENT LOGS ───────────────────────────
+  // Audit trail for order assignments to drivers
+  match /driverAssignmentLogs/{logId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.driverId == uid() ||
+      resource.data.assignedBy == uid()
+    );
+    
+    // System or admin creates logs
+    allow create: if isAuth() && (
+      isAdmin() ||
+      isRestaurant()
+    );
+    
+    // Append-only: no updates allowed
+    allow update: if false;
     allow delete: if isAuth() && isAdmin();
   }
 

@@ -5,6 +5,7 @@ import 'home/home_screen.dart';
 import 'orders/orders_screen.dart';
 import 'earnings/earnings_screen.dart';
 import 'profile/profile_screen.dart';
+import 'reviews/driver_reviews_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -19,7 +20,7 @@ class _MainShellState extends State<MainShell> {
   final List<Widget> _screens = const [
     HomeScreen(),
     OrdersScreen(),
-    EarningsScreen(),
+    DriverReviewsScreen(),
     ProfileScreen(),
   ];
 
@@ -68,9 +69,9 @@ class _MainShellState extends State<MainShell> {
                   onTap: () => _onTap(1),
                 ),
                 _NavItem(
-                  icon: Icons.account_balance_wallet_outlined,
-                  activeIcon: Icons.account_balance_wallet_rounded,
-                  label: 'Earnings',
+                  icon: Icons.star_outline_rounded,
+                  activeIcon: Icons.star_rounded,
+                  label: 'Reviews',
                   isActive: _currentIndex == 2,
                   onTap: () => _onTap(2),
                 ),

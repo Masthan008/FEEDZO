@@ -19,6 +19,7 @@ import 'screens/send_notification_screen.dart';
 import 'screens/recommended_restaurants_screen.dart';
 import 'screens/hike_charges_screen.dart';
 import 'screens/driver_payouts_screen.dart';
+import 'screens/reviews_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -49,6 +50,7 @@ class _AdminShellState extends State<AdminShell> {
       case AdminPage.sendNotification: return const SendNotificationScreen();
       case AdminPage.hikeCharges: return const HikeChargesScreen();
       case AdminPage.driverPayouts: return const DriverPayoutsScreen();
+      case AdminPage.reviews: return const AdminReviewsScreen();
     }
   }
 

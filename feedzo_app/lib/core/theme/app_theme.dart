@@ -31,7 +31,13 @@ class AppColors {
   static const success = Color(0xFF16A34A);
   static const error = Color(0xFFDC2626);
   static const warning = Color(0xFFF59E0B);
+  static const info = Color(0xFF0EA5E9);
   static const star = Color(0xFFFBBF24);
+
+  // Status colors
+  static const statusDelivered = Color(0xFF16A34A);
+  static const statusPreparing = Color(0xFFF59E0B);
+  static const statusPicked = Color(0xFF0EA5E9);
 
   // Shadows
   static const cardShadow = Color(0x14000000);

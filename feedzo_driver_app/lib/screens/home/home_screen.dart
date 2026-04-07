@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../orders/order_details_screen.dart';
+import '../../services/driver_notification_service.dart';
+import '../../models/driver_notification_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,12 +19,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
   bool _isOnline = true;
+  final DriverNotificationService _notificationService = DriverNotificationService();
 
   @override
   void initState() {
     super.initState();
     _startLocationUpdates();
     _fetchDriverStatus();
+    _initializeNotifications();
+  }
+
+  Future<void> _initializeNotifications() async {
+    if (_uid.isNotEmpty) {
+      await _notificationService.initializeFCM(_uid);
+    }
   }
 
   Future<void> _fetchDriverStatus() async {
@@ -68,6 +78,9 @@ class _HomeScreenState extends State<HomeScreen> {
       'status': val ? 'available' : 'offline',
       'isOnline': val,
       'lastActive': FieldValue.serverTimestamp(),
+      // Clear active orders when going offline
+      if (!val) 'activeOrderIds': [],
+      if (!val) 'currentOrderId': null,
     });
   }
 
@@ -87,6 +100,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Stream<List<DocumentSnapshot>> _getActiveOrdersStream(List<String> activeOrderIds) {
+    return FirebaseFirestore.instance
+        .collection('orders')
+        .where(FieldPath.documentId, whereIn: activeOrderIds)
+        .snapshots()
+        .map((querySnap) => querySnap.docs);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_uid.isEmpty)
@@ -104,15 +125,15 @@ class _HomeScreenState extends State<HomeScreen> {
         final todayOrders = (driverData['todayOrders'] as num?)?.toInt() ?? 0;
         final codCollected =
             ((driverData['codCollected'] as num?) ?? 0).toDouble();
+        final activeOrderIds = List<String>.from(driverData['activeOrderIds'] ?? []);
+        final maxConcurrentOrders = (driverData['maxConcurrentOrders'] as num?)?.toInt() ?? 3;
+        final allowMultiOrder = driverData['allowMultiOrderAssignment'] as bool? ?? true;
 
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('orders')
-              .where('driverId', isEqualTo: _uid)
-              .where('status', whereIn: ['preparing', 'picked'])
-              .snapshots(),
+        // Fetch active orders using activeOrderIds
+        return StreamBuilder<List<DocumentSnapshot>>(
+          stream: _getActiveOrdersStream(activeOrderIds),
           builder: (context, ordersSnap) {
-            final activeDocs = ordersSnap.data?.docs ?? [];
+            final activeDocs = ordersSnap.data?.where((doc) => doc.exists).toList() ?? [];
 
             return Scaffold(
               backgroundColor: AppColors.background,
@@ -257,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               _QuickStat(
                                 icon: Icons.pending_actions_rounded,
                                 label: 'Active',
-                                value: '${activeDocs.length}',
+                                value: '${activeDocs.length}/$maxConcurrentOrders',
                               ),
                             ],
                           ),
@@ -292,16 +313,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary
-                                        .withValues(alpha: 0.1),
+                                    color: activeDocs.length >= maxConcurrentOrders
+                                        ? Colors.red.withValues(alpha: 0.2)
+                                        : AppColors.primary.withValues(alpha: 0.1),
                                     borderRadius: AppShape.round,
                                   ),
                                   child: Text(
-                                    '${activeDocs.length}',
-                                    style: const TextStyle(
+                                    '${activeDocs.length}/$maxConcurrentOrders',
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
+                                      color: activeDocs.length >= maxConcurrentOrders
+                                          ? Colors.red
+                                          : AppColors.primary,
                                     ),
                                   ),
                                 ),
@@ -779,8 +803,23 @@ class _AvailableOrderTileState extends State<_AvailableOrderTile> {
           .doc(widget.driverUid)
           .get();
       final dd = driverDoc.data() as Map<String, dynamic>? ?? {};
+      
+      // Check multi-order capacity
+      final activeOrderIds = List<String>.from(dd['activeOrderIds'] ?? []);
+      final maxConcurrentOrders = (dd['maxConcurrentOrders'] as num?)?.toInt() ?? 3;
+      final allowMultiOrder = dd['allowMultiOrderAssignment'] as bool? ?? true;
+      
+      if (activeOrderIds.length >= maxConcurrentOrders) {
+        throw Exception('You are at maximum capacity ($maxConcurrentOrders orders). Complete some orders first.');
+      }
+      
+      if (!allowMultiOrder && activeOrderIds.isNotEmpty) {
+        throw Exception('Multi-order assignment is disabled. Complete your current order first.');
+      }
 
       final batch = FirebaseFirestore.instance.batch();
+      
+      // Update order
       batch.update(
         FirebaseFirestore.instance.collection('orders').doc(widget.orderId),
         {
@@ -788,20 +827,39 @@ class _AvailableOrderTileState extends State<_AvailableOrderTile> {
           'driverName': dd['name'] ?? 'Driver',
           'driverPhone': dd['phone'] ?? '',
           'status': 'preparing',
+          'assignedAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         },
       );
+      
+      // Update driver with new active order
+      final newActiveOrderIds = [...activeOrderIds, widget.orderId];
+      String newStatus;
+      if (newActiveOrderIds.length >= maxConcurrentOrders) {
+        newStatus = 'multiOrder';
+      } else if (newActiveOrderIds.length > 1) {
+        newStatus = 'multiOrder';
+      } else {
+        newStatus = 'busy';
+      }
+      
       batch.update(
         FirebaseFirestore.instance.collection('drivers').doc(widget.driverUid),
-        {'status': 'busy', 'currentOrderId': widget.orderId},
+        {
+          'status': newStatus,
+          'currentOrderId': newActiveOrderIds.first,
+          'activeOrderIds': newActiveOrderIds,
+          'lastOrderAcceptedAt': FieldValue.serverTimestamp(),
+        },
       );
+      
       await batch.commit();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order accepted! 🚀'),
-            backgroundColor: Color(0xFF10B981),
+          SnackBar(
+            content: Text('Order accepted! Active orders: ${newActiveOrderIds.length}/$maxConcurrentOrders 🚀'),
+            backgroundColor: const Color(0xFF10B981),
           ),
         );
       }

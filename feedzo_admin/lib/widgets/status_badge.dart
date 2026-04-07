@@ -41,6 +41,8 @@ class DriverStatusBadge extends StatelessWidget {
         color = AppColors.statusDelivered; bg = AppColors.statusDeliveredBg; label = 'Available';
       case DriverStatus.busy:
         color = AppColors.statusPreparing; bg = AppColors.statusPreparingBg; label = 'Busy';
+      case DriverStatus.multiOrder:
+        color = AppColors.warning; bg = const Color(0xFFFEF3C7); label = 'Multi-Order';
       case DriverStatus.offline:
         color = AppColors.textSecondary; bg = const Color(0xFFF3F4F6); label = 'Offline';
     }

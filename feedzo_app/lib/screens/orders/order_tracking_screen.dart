@@ -6,6 +6,7 @@ import '../../data/models/order_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/app_button.dart';
 import 'order_chat_screen.dart';
+import 'rate_order_screen.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
   final String orderId;
@@ -170,6 +171,81 @@ class OrderTrackingScreen extends StatelessWidget {
                   // ── Delivered Success Banner ──
                   if (order.status == OrderStatus.delivered) ...[
                     _buildSuccessBanner(),
+                    const SizedBox(height: 12),
+                    
+                    // ── Rate Order Button ──
+                    if (order.isRated != true)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RateOrderScreen(
+                                  orderId: order.id,
+                                  restaurantId: order.restaurantId,
+                                  restaurantName: order.restaurantName,
+                                  driverId: order.driverId,
+                                  driverName: order.driverName,
+                                  items: order.items.map((ci) => OrderItemRating(
+                                    dishId: ci.item.id,
+                                    dishName: ci.item.name,
+                                    quantity: ci.quantity,
+                                  )).toList(),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.star_rounded),
+                          label: const Text(
+                            'Rate Your Order',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB800),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppShape.medium,
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.1),
+                          borderRadius: AppShape.large,
+                          border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.success,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Thanks for rating!',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 12),
                   ],
 

@@ -11,6 +11,7 @@ import 'providers/restaurant_provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/auth_gateway_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/cart/cart_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
@@ -107,7 +108,7 @@ class _AuthGate extends StatelessWidget {
           }
           return const MainShell();
         }
-        return const LoginScreen();
+        return const AuthGatewayScreen();
       },
     );
   }

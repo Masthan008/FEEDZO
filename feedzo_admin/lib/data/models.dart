@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum OrderStatus { pending, preparing, outForDelivery, delivered, cancelled }
-enum DriverStatus { available, busy, offline }
+enum DriverStatus { available, busy, offline, multiOrder }
+enum DriverAssignmentType { auto, manual, adminOverride }
 enum RestaurantStatus { active, disabled, pendingApproval }
 enum UserStatus { active, blocked }
 enum TransactionType { commission, payout }
@@ -86,11 +87,23 @@ class Driver {
   final double rating;
   final double totalEarnings;
   String? currentOrderId;
+  List<String> activeOrderIds; // Multiple active orders support
+  int maxConcurrentOrders; // Configurable limit (default: 3)
+  bool allowMultiOrderAssignment; // Admin toggle
+  final DateTime? lastLocationUpdate;
+  final double? currentLat;
+  final double? currentLng;
 
   Driver({
     required this.id, required this.name, required this.phone, required this.vehicle,
     required this.status, required this.totalDeliveries, required this.rating,
     required this.totalEarnings, this.currentOrderId,
+    this.activeOrderIds = const [],
+    this.maxConcurrentOrders = 3,
+    this.allowMultiOrderAssignment = true,
+    this.lastLocationUpdate,
+    this.currentLat,
+    this.currentLng,
   });
 
   factory Driver.fromMap(String id, Map<String, dynamic> map) {
@@ -104,8 +117,23 @@ class Driver {
       rating: ((map['rating'] ?? 5.0) as num).toDouble(),
       totalEarnings: ((map['totalEarnings'] ?? 0) as num).toDouble(),
       currentOrderId: map['currentOrderId'] as String?,
+      activeOrderIds: List<String>.from(map['activeOrderIds'] ?? []),
+      maxConcurrentOrders: (map['maxConcurrentOrders'] as num?)?.toInt() ?? 3,
+      allowMultiOrderAssignment: map['allowMultiOrderAssignment'] as bool? ?? true,
+      lastLocationUpdate: (map['lastLocationUpdate'] as Timestamp?)?.toDate(),
+      currentLat: (map['currentLat'] as num?)?.toDouble(),
+      currentLng: (map['currentLng'] as num?)?.toDouble(),
     );
   }
+
+  // Computed properties
+  bool get canAcceptMoreOrders => 
+    (status == DriverStatus.available || 
+     (status == DriverStatus.busy && allowMultiOrderAssignment && activeOrderIds.length < maxConcurrentOrders));
+  
+  int get activeOrderCount => activeOrderIds.length;
+  
+  bool get isAtCapacity => activeOrderIds.length >= maxConcurrentOrders;
 }
 
 class AdminRestaurant {

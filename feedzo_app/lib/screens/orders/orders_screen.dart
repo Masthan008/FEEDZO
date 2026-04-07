@@ -304,7 +304,15 @@ class _OrderCard extends StatelessWidget {
                           MaterialPageRoute(
                             builder: (_) => RateOrderScreen(
                               orderId: order.id,
+                              restaurantId: order.restaurantId,
                               restaurantName: order.restaurantName,
+                              driverId: order.driverId,
+                              driverName: order.driverName,
+                              items: order.items.map((ci) => OrderItemRating(
+                                dishId: ci.item.id,
+                                dishName: ci.item.name,
+                                quantity: ci.quantity,
+                              )).toList(),
                             ),
                           ),
                         );
