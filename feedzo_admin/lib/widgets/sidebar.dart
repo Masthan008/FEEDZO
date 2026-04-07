@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/admin_provider.dart';
 
-enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification }
+enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts }
 
 class Sidebar extends StatelessWidget {
   final AdminPage current;
@@ -62,6 +62,8 @@ class Sidebar extends StatelessWidget {
                   _Item(icon: Icons.thumb_up_rounded, label: 'Recommended', page: AdminPage.recommended, current: current, onTap: onSelect),
                   if (ap.settings.driverSettlementEnabled)
                     _Item(icon: Icons.account_balance_wallet_rounded, label: 'COD & Settlement', page: AdminPage.codSettlement, current: current, onTap: onSelect, badge: ap.driversWithPendingCash > 0 ? ap.driversWithPendingCash : null),
+                  _Item(icon: Icons.price_change_rounded, label: 'Hike Charges', page: AdminPage.hikeCharges, current: current, onTap: onSelect),
+                  _Item(icon: Icons.account_balance_wallet_rounded, label: 'Driver Payouts', page: AdminPage.driverPayouts, current: current, onTap: onSelect),
                   _Item(icon: Icons.auto_awesome_rounded, label: 'AI Insights', page: AdminPage.aiInsights, current: current, onTap: onSelect),
                   _Item(icon: Icons.notifications_rounded, label: 'Alerts', page: AdminPage.alerts, current: current, onTap: onSelect, badge: alertCount > 0 ? alertCount : null),
                   const SizedBox(height: 16),

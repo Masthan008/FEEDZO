@@ -396,17 +396,19 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               if (rp.recommended.isNotEmpty)
                 SizedBox(
-                  height: 220,
+                  height: 280,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: rp.recommended.length,
-                    itemBuilder: (_, i) => Container(
+                    itemBuilder: (_, i) => SizedBox(
                       width: 250,
-                      margin: const EdgeInsets.only(right: 16),
-                      child: RestaurantCard(
-                        restaurant: rp.recommended[i],
-                        onTap: () => _openRestaurant(context, rp.recommended[i].id),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: RestaurantCard(
+                          restaurant: rp.recommended[i],
+                          onTap: () => _openRestaurant(context, rp.recommended[i].id),
+                        ),
                       ),
                     ),
                   ),

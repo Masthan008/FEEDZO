@@ -9,6 +9,7 @@ import 'providers/auth_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/wallet_provider.dart';
+import 'providers/hike_charges_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/waiting_approval_screen.dart';
 import 'screens/home/home_shell.dart';
@@ -34,6 +35,7 @@ class FeedzoRestaurantApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => MenuProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
+        ChangeNotifierProvider(create: (_) => HikeChargesProvider()),
       ],
       child: MaterialApp(
         title: 'Feedzo Restaurant',

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import '../../data/models/order_model.dart';
@@ -27,23 +25,42 @@ class OrderTrackingScreen extends StatelessWidget {
           );
         }
         if (!snapshot.hasData) {
-          return const Scaffold(body: Center(child: Text('Order not found')));
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(title: const Text('Order Details')),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.receipt_long_outlined,
+                      size: 64, color: AppColors.textHint),
+                  const SizedBox(height: 16),
+                  const Text('Order not found',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Text('This order may have been removed',
+                      style: TextStyle(color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+          );
         }
         final order = snapshot.data!;
 
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: const Text('Order Tracking'),
-            automaticallyImplyLeading: false,
+            title: Text('Order ${order.id}'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () => Navigator.pop(context),
+            ),
             actions: [
               TextButton(
                 onPressed: () =>
                     Navigator.popUntil(context, (r) => r.isFirst),
-                child: const Text(
-                  'Home',
-                  style: TextStyle(color: AppColors.primary),
-                ),
+                child: const Text('Home'),
               ),
             ],
           ),
@@ -53,142 +70,756 @@ class OrderTrackingScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Status Header Card ──
                   _buildStatusCard(order),
-                  const SizedBox(height: 20),
-                // ── OTP Verification Card ──
-                if (order.otpCode != null &&
-                    (order.status == OrderStatus.outForDelivery ||
-                     order.status == OrderStatus.picked))
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.warning.withValues(alpha: 0.1),
-                          AppColors.warning.withValues(alpha: 0.05),
-                        ],
-                      ),
-                      borderRadius: AppShape.large,
-                      border: Border.all(
-                          color: AppColors.warning.withValues(alpha: 0.3)),
+                  const SizedBox(height: 16),
+
+                  // ── OTP Verification Card ──
+                  if (order.otpCode != null &&
+                      (order.status == OrderStatus.outForDelivery ||
+                          order.status == OrderStatus.picked))
+                    _buildOtpCard(order),
+
+                  // ── Live Map (when driver is en route) ──
+                  if (order.status == OrderStatus.picked ||
+                      order.status == OrderStatus.outForDelivery) ...[
+                    _buildSectionTitle('Live Tracking'),
+                    const SizedBox(height: 10),
+                    _LiveMap(order: order),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // ── Info banner for placed/preparing orders ──
+                  if (order.status == OrderStatus.placed ||
+                      order.status == OrderStatus.preparing)
+                    _buildInfoBanner(order),
+
+                  // ── Order Status Timeline ──
+                  _buildTimeline(order),
+                  const SizedBox(height: 16),
+
+                  // ── Restaurant Details ──
+                  _buildRestaurantCard(order),
+                  const SizedBox(height: 16),
+
+                  // ── Delivery Address ──
+                  _buildDeliveryCard(order),
+                  const SizedBox(height: 16),
+
+                  // ── Driver Info ──
+                  if (order.driverId != null &&
+                      order.status != OrderStatus.delivered &&
+                      order.status != OrderStatus.cancelled)
+                    _buildDriverCard(context, order),
+
+                  // ── Order Summary & Payment ──
+                  _buildOrderSummary(order),
+                  const SizedBox(height: 16),
+
+                  // ── Payment Details ──
+                  _buildPaymentCard(order),
+                  const SizedBox(height: 16),
+
+                  // ── Action Buttons ──
+                  if (order.status == OrderStatus.placed) ...[
+                    AppButton(
+                      label: 'Cancel Order',
+                      onPressed: () => _cancelOrder(context, order.id),
+                      color: AppColors.error,
+                      width: double.infinity,
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.warning.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.pin_rounded,
-                              color: AppColors.warning, size: 24),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Delivery OTP',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Chat with driver button ──
+                  if (order.driverId != null &&
+                      order.status != OrderStatus.delivered &&
+                      order.status != OrderStatus.cancelled) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderChatScreen(
+                                orderId: order.id,
+                                currentUserId: order.customerId,
+                                currentUserRole: 'customer',
+                                otherUserName: 'Delivery Partner',
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                order.otpCode!,
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 8,
-                                  color: AppColors.warning,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.shield_rounded,
-                            color: AppColors.warning, size: 20),
-                      ],
-                    ),
-                  ),
-                if (order.status == OrderStatus.picked ||
-                    order.status == OrderStatus.outForDelivery) ...[
-                  const Text(
-                    'Live Tracking',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _LiveMap(order: order),
-                  const SizedBox(height: 20),
-                ],
-                _buildTimeline(order),
-                const SizedBox(height: 20),
-                _buildOrderSummary(order),
-                if (order.status == OrderStatus.placed) ...[
-                  const SizedBox(height: 20),
-                  AppButton(
-                    label: 'Cancel Order',
-                    onPressed: () => _cancelOrder(context, order.id),
-                    color: AppColors.error,
-                    width: double.infinity,
-                  ),
-                ],
-                // Chat with driver button
-                if (order.driverId != null &&
-                    order.status != OrderStatus.delivered &&
-                    order.status != OrderStatus.cancelled) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => OrderChatScreen(
-                              orderId: order.id,
-                              currentUserId: order.customerId,
-                              currentUserRole: 'customer',
-                              otherUserName: 'Delivery Partner',
                             ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.chat_rounded),
-                      label: const Text('Chat with Driver'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: AppShape.medium),
+                          );
+                        },
+                        icon: const Icon(Icons.chat_rounded),
+                        label: const Text('Chat with Driver'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.accent,
+                          side: const BorderSide(color: AppColors.accent),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: AppShape.medium),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Delivered Success Banner ──
+                  if (order.status == OrderStatus.delivered) ...[
+                    _buildSuccessBanner(),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Need Help ──
+                  _buildHelpCard(order),
+                  const SizedBox(height: 40),
                 ],
-                if (order.status == OrderStatus.delivered) ...[
-                  const SizedBox(height: 20),
-                  _buildSuccessBanner(),
-                ],
-                const SizedBox(height: 40),
-              ],
+              ),
             ),
           ),
-        ),
         );
       },
     );
   }
 
+  // ── Section Title ──
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  // ── Status Card ──
+  Widget _buildStatusCard(Order order) {
+    final isDelivered = order.status == OrderStatus.delivered;
+    final isCancelled = order.status == OrderStatus.cancelled;
+    final isWaiting = order.status == OrderStatus.placed ||
+        order.status == OrderStatus.preparing;
+
+    Color bgColor;
+    Color accentColor;
+    IconData statusIcon;
+
+    if (isCancelled) {
+      bgColor = AppColors.error;
+      accentColor = AppColors.error;
+      statusIcon = Icons.cancel_rounded;
+    } else if (isDelivered) {
+      bgColor = const Color(0xFF059669);
+      accentColor = AppColors.success;
+      statusIcon = Icons.check_circle_rounded;
+    } else if (isWaiting) {
+      bgColor = const Color(0xFF2563EB); // Blue for waiting
+      accentColor = const Color(0xFF3B82F6);
+      statusIcon = order.status == OrderStatus.placed
+          ? Icons.receipt_long_rounded
+          : Icons.restaurant_rounded;
+    } else {
+      // picked / outForDelivery
+      bgColor = const Color(0xFF7C3AED); // Purple for in transit
+      accentColor = const Color(0xFF8B5CF6);
+      statusIcon = Icons.delivery_dining_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [bgColor, bgColor.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppShape.xl,
+        boxShadow: [
+          BoxShadow(
+            color: bgColor.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(statusIcon, color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order.statusLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _statusSubtitle(order),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: AppShape.small,
+            ),
+            child: Row(
+              children: [
+                Text(
+                  'Order ID: ${order.id}',
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 12),
+                ),
+                const Spacer(),
+                Text(
+                  order.restaurantName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _statusSubtitle(Order order) {
+    switch (order.status) {
+      case OrderStatus.placed:
+        return 'Waiting for restaurant to accept';
+      case OrderStatus.preparing:
+        return 'Restaurant is preparing your food';
+      case OrderStatus.ready:
+        return 'Food is ready for pickup';
+      case OrderStatus.picked:
+      case OrderStatus.outForDelivery:
+        return 'Driver is on the way to you';
+      case OrderStatus.delivered:
+        return 'Enjoy your meal! 🎉';
+      case OrderStatus.cancelled:
+        return order.cancellationReason ?? 'Order was cancelled';
+    }
+  }
+
+  // ── OTP Card ──
+  Widget _buildOtpCard(Order order) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.warning.withValues(alpha: 0.1),
+            AppColors.warning.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: AppShape.large,
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.pin_rounded,
+                color: AppColors.warning, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Delivery OTP',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  order.otpCode!,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 8,
+                    color: AppColors.warning,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.shield_rounded,
+              color: AppColors.warning, size: 20),
+        ],
+      ),
+    );
+  }
+
+  // ── Info Banner ──
+  Widget _buildInfoBanner(Order order) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF), // light blue
+        borderRadius: AppShape.large,
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: Color(0xFF2563EB)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              order.status == OrderStatus.placed
+                  ? 'Waiting for the restaurant to confirm your order. Live tracking and chat will be available once a driver is assigned.'
+                  : 'Restaurant is preparing your food. A driver will be assigned shortly.',
+              style: const TextStyle(
+                color: Color(0xFF1E40AF),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Restaurant Card ──
+  Widget _buildRestaurantCard(Order order) {
+    return _buildCard(
+      title: 'Restaurant',
+      icon: Icons.restaurant_rounded,
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: AppShape.small,
+            child: Image.network(
+              order.restaurantImage,
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: AppShape.small,
+                ),
+                child: const Icon(Icons.restaurant,
+                    color: AppColors.textHint),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  order.restaurantName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${order.items.length} item${order.items.length > 1 ? 's' : ''} • ₹${order.totalAmount.toInt()}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Delivery Address Card ──
+  Widget _buildDeliveryCard(Order order) {
+    return _buildCard(
+      title: 'Delivery Address',
+      icon: Icons.location_on_outlined,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.location_on_rounded,
+                color: AppColors.accent, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  order.address,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (order.deliveryInstructions != null &&
+                    order.deliveryInstructions!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Note: ${order.deliveryInstructions}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Driver Card ──
+  Widget _buildDriverCard(BuildContext context, Order order) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.large,
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.delivery_dining_rounded,
+                  size: 18, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Text(
+                'Delivery Partner',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.accent.withValues(alpha: 0.1),
+                child: Text(
+                  (order.driverName ?? 'D')[0].toUpperCase(),
+                  style: const TextStyle(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order.driverName ?? 'Driver',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (order.driverPhone != null)
+                      Text(
+                        order.driverPhone!,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (order.driverPhone != null)
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.phone_rounded,
+                        color: AppColors.accent, size: 20),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      // Could add url_launcher call here
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Payment Card ──
+  Widget _buildPaymentCard(Order order) {
+    return _buildCard(
+      title: 'Payment',
+      icon: Icons.payment_rounded,
+      child: Column(
+        children: [
+          _paymentRow('Subtotal',
+              '₹${order.subtotal.toStringAsFixed(0)}'),
+          if (order.deliveryFee > 0)
+            _paymentRow('Delivery Fee',
+                '₹${order.deliveryFee.toStringAsFixed(0)}'),
+          if (order.deliveryFee == 0)
+            _paymentRow('Delivery Fee', 'FREE', isHighlight: true),
+          if (order.taxAmount > 0)
+            _paymentRow(
+                'Taxes', '₹${order.taxAmount.toStringAsFixed(0)}'),
+          if (order.discount > 0)
+            _paymentRow('Discount',
+                '-₹${order.discount.toStringAsFixed(0)}',
+                isHighlight: true),
+          if (order.tipAmount > 0)
+            _paymentRow(
+                'Tip', '₹${order.tipAmount.toStringAsFixed(0)}'),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Divider(color: AppColors.divider, height: 1),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Paid',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+              Text(
+                '₹${order.totalAmount.toInt()}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: order.paymentType == 'cod'
+                  ? AppColors.warning.withValues(alpha: 0.1)
+                  : AppColors.accent.withValues(alpha: 0.1),
+              borderRadius: AppShape.small,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  order.paymentType == 'cod'
+                      ? Icons.money_rounded
+                      : Icons.account_balance_wallet_rounded,
+                  size: 14,
+                  color: order.paymentType == 'cod'
+                      ? AppColors.warning
+                      : AppColors.accent,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  order.paymentType == 'cod'
+                      ? 'Cash on Delivery'
+                      : 'Paid Online',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: order.paymentType == 'cod'
+                        ? AppColors.warning
+                        : AppColors.accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _paymentRow(String label, String value,
+      {bool isHighlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary)),
+          Text(value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isHighlight ? FontWeight.w600 : FontWeight.w500,
+                color: isHighlight
+                    ? const Color(0xFF059669)
+                    : AppColors.textPrimary,
+              )),
+        ],
+      ),
+    );
+  }
+
+  // ── Help Card ──
+  Widget _buildHelpCard(Order order) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.large,
+        boxShadow: AppShadows.subtle,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.headset_mic_rounded,
+                color: AppColors.textSecondary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Need Help?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Contact support for any issues with your order',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded,
+              color: AppColors.textHint),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared Card Builder ──
+  Widget _buildCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.large,
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  // ── Cancel Order ──
   Future<void> _cancelOrder(BuildContext context, String orderId) async {
     HapticFeedback.heavyImpact();
 
@@ -223,7 +854,8 @@ class OrderTrackingScreen extends StatelessWidget {
               children: [
                 const Text(
                   'Please let us know why you want to cancel:',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                  style: TextStyle(
+                      color: AppColors.textSecondary, fontSize: 14),
                 ),
                 const SizedBox(height: 16),
                 ...reasons.map(
@@ -290,15 +922,13 @@ class OrderTrackingScreen extends StatelessWidget {
     }
   }
 
+  // ── Success Banner ──
   Widget _buildSuccessBanner() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.success,
-            AppColors.success.withValues(alpha: 0.8),
-          ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF059669), Color(0xFF10B981)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -306,7 +936,8 @@ class OrderTrackingScreen extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.check_circle_rounded, color: Colors.white, size: 40),
+          Icon(Icons.check_circle_rounded,
+              color: Colors.white, size: 40),
           SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -336,121 +967,48 @@ class OrderTrackingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusCard(Order order) {
-    final isDelivered = order.status == OrderStatus.delivered;
-    final isCancelled = order.status == OrderStatus.cancelled;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isCancelled
-              ? [AppColors.error, AppColors.error.withValues(alpha: 0.7)]
-              : isDelivered
-                  ? [
-                      AppColors.success,
-                      AppColors.success.withValues(alpha: 0.7)
-                    ]
-                  : [AppColors.gradientStart, AppColors.gradientEnd],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: AppShape.xl,
-        boxShadow: isCancelled
-            ? []
-            : [
-                BoxShadow(
-                  color: (isDelivered ? AppColors.success : AppColors.primary)
-                      .withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isCancelled
-                      ? Icons.cancel_rounded
-                      : isDelivered
-                          ? Icons.check_circle_rounded
-                          : Icons.delivery_dining_rounded,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      order.statusLabel,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isCancelled
-                          ? 'Order was cancelled'
-                          : isDelivered
-                              ? 'Enjoy your meal!'
-                              : 'Estimated: 30-40 min',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: AppShape.small,
-            ),
-            child: Row(
-              children: [
-                Text(
-                  'Order #${order.id.isNotEmpty ? order.id.substring(order.id.length > 6 ? order.id.length - 6 : 0) : 'N/A'}',
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 12),
-                ),
-                const Spacer(),
-                Text(
-                  order.restaurantName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ── Timeline ──
   Widget _buildTimeline(Order order) {
-    if (order.status == OrderStatus.cancelled) return const SizedBox.shrink();
+    if (order.status == OrderStatus.cancelled) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.05),
+          borderRadius: AppShape.large,
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cancel_rounded,
+                color: AppColors.error, size: 32),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Order Cancelled',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  if (order.cancellationReason != null)
+                    Text(
+                      order.cancellationReason!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final steps = [
       {
@@ -508,6 +1066,14 @@ class OrderTrackingScreen extends StatelessWidget {
             final isCurrent = idx == currentIdx;
             final isLast = idx == steps.length - 1;
 
+            // Use blue for the completed/current step dots instead of green
+            final dotColor = isDone
+                ? const Color(0xFF2563EB)
+                : AppColors.surfaceVariant;
+            final lineColor = isDone && idx < currentIdx
+                ? const Color(0xFF2563EB)
+                : AppColors.divider;
+
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -518,12 +1084,17 @@ class OrderTrackingScreen extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isDone
-                            ? AppColors.primary
-                            : AppColors.surfaceVariant,
+                        color: dotColor,
                         shape: BoxShape.circle,
                         boxShadow: isCurrent
-                            ? AppShadows.primaryGlow(0.3)
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFF2563EB)
+                                      .withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
                             : [],
                       ),
                       child: Icon(
@@ -539,9 +1110,7 @@ class OrderTrackingScreen extends StatelessWidget {
                         width: 2.5,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: isDone && idx < currentIdx
-                              ? AppColors.primary
-                              : AppColors.divider,
+                          color: lineColor,
                           borderRadius: AppShape.round,
                         ),
                       ),
@@ -588,13 +1157,13 @@ class OrderTrackingScreen extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primarySurface,
+                      color: const Color(0xFFEFF6FF),
                       borderRadius: AppShape.round,
                     ),
                     child: const Text(
                       'Now',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: Color(0xFF2563EB),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -608,6 +1177,7 @@ class OrderTrackingScreen extends StatelessWidget {
     );
   }
 
+  // ── Order Summary ──
   Widget _buildOrderSummary(Order order) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -619,13 +1189,20 @@ class OrderTrackingScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Order Summary',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
+          const Row(
+            children: [
+              Icon(Icons.shopping_bag_outlined,
+                  size: 18, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Text(
+                'Order Items',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           ...order.items.map(
@@ -637,13 +1214,13 @@ class OrderTrackingScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primarySurface,
+                      color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       '${ci.quantity}x',
                       style: const TextStyle(
-                        color: AppColors.primary,
+                        color: Color(0xFF2563EB),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -671,31 +1248,6 @@ class OrderTrackingScreen extends StatelessWidget {
               ),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: AppColors.divider, height: 1),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total Amount',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                '₹${order.totalAmount.toInt()}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -715,57 +1267,118 @@ class _LiveMap extends StatelessWidget {
     return StreamBuilder<Map<String, double>?>(
       stream: FirestoreService.watchDriverLocation(order.driverId!),
       builder: (context, snapshot) {
-        // Default to Bangalore coordinates
-        final lat = snapshot.data?['lat'] ?? AppConstants.defaultLat;
-        final lng = snapshot.data?['lng'] ?? AppConstants.defaultLng;
-        final driverPos = LatLng(lat, lng);
+        final hasLocation = snapshot.hasData && snapshot.data != null;
 
         return Container(
-          height: 220,
+          height: 160,
           decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: AppShape.large,
-            boxShadow: AppShadows.card,
-          ),
-          child: ClipRRect(
-            borderRadius: AppShape.large,
-            child: FlutterMap(
-              options: MapOptions(
-                initialCenter: driverPos,
-                initialZoom: 15.0,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.feedzo.customer',
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Background pattern
+              Positioned(
+                right: -20,
+                bottom: -20,
+                child: Icon(
+                  Icons.delivery_dining_rounded,
+                  size: 120,
+                  color: Colors.white.withValues(alpha: 0.08),
                 ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: driverPos,
-                      width: 48,
-                      height: 48,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: AppShadows.primaryGlow(0.4),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.delivery_dining_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.delivery_dining_rounded,
-                          color: Colors.white,
-                          size: 24,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Driver En Route',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                hasLocation
+                                    ? 'Location updating in real-time'
+                                    : 'Waiting for driver location...',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    const Spacer(),
+                    // Live indicator
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: hasLocation
+                                ? const Color(0xFF4ADE80)
+                                : Colors.white38,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          hasLocation ? 'LIVE TRACKING' : 'CONNECTING...',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 }
+

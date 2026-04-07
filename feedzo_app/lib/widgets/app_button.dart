@@ -69,6 +69,7 @@ class AppButton extends StatelessWidget {
     if (useGradient) {
       return SizedBox(
         width: width,
+        height: 54,
         child: GestureDetector(
           onTap: isLoading
               ? null
@@ -77,13 +78,20 @@ class AppButton extends StatelessWidget {
                   onPressed?.call();
                 },
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [AppColors.gradientStart, AppColors.gradientEnd],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
               borderRadius: AppShape.medium,
-              boxShadow: AppShadows.primaryGlow(0.3),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Center(
               child: DefaultTextStyle(

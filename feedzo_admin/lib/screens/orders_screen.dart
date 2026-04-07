@@ -210,6 +210,9 @@ class _OrderRow extends StatelessWidget {
             _Btn(label: 'Pick', color: AppColors.info, onTap: () => _updateStatus('picked')),
           if (status == 'picked')
             _Btn(label: 'Deliver', color: AppColors.statusDelivered, onTap: () => _updateStatus('delivered')),
+          // Cancel COD option for placed/preparing orders
+          if (paymentType == 'cod' && (status == 'placed' || status == 'preparing'))
+            _Btn(label: 'Cancel COD', color: AppColors.error, onTap: () => _showCancelDialog(context)),
         ])),
       ]),
     );
@@ -217,6 +220,16 @@ class _OrderRow extends StatelessWidget {
 
   void _showAssignModal(BuildContext context) {
     showDialog(context: context, builder: (_) => _AssignDriverModal(orderId: doc.id));
+  }
+
+  void _showCancelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => _CancelOrderDialog(
+        orderId: doc.id,
+        customerName: (doc.data() as Map<String, dynamic>)['customerName'] ?? 'Unknown',
+      ),
+    );
   }
 }
 
@@ -356,5 +369,229 @@ class _Btn extends StatelessWidget {
         child: Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
       ),
     );
+  }
+}
+
+// ─── Cancel Order Dialog ─────────────────────────────────────────────────────
+
+class _CancelOrderDialog extends StatefulWidget {
+  final String orderId;
+  final String customerName;
+  
+  const _CancelOrderDialog({required this.orderId, required this.customerName});
+
+  @override
+  State<_CancelOrderDialog> createState() => _CancelOrderDialogState();
+}
+
+class _CancelOrderDialogState extends State<_CancelOrderDialog> {
+  final _reasonCtrl = TextEditingController();
+  bool _cancelling = false;
+  String? _selectedReason;
+  
+  final List<String> _quickReasons = [
+    'Customer requested cancellation',
+    'Restaurant cannot fulfill order',
+    'Item out of stock',
+    'Delivery address not reachable',
+    'Customer not responding',
+    'Other',
+  ];
+
+  Future<void> _cancelOrder() async {
+    final reason = _selectedReason == 'Other' ? _reasonCtrl.text.trim() : _selectedReason;
+    if (reason == null || reason.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please provide a cancellation reason')),
+      );
+      return;
+    }
+
+    setState(() => _cancelling = true);
+
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(widget.orderId).update({
+        'status': 'cancelled',
+        'cancelledBy': 'admin',
+        'cancelledAt': FieldValue.serverTimestamp(),
+        'cancellationReason': reason,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order #${widget.orderId.substring(widget.orderId.length - 6).toUpperCase()} cancelled successfully'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _cancelling = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to cancel order: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 480,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.cancel_outlined, color: AppColors.error, size: 24),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cancel COD Order',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'This action cannot be undone',
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // Customer info
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 20, color: AppColors.textSecondary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Customer: ${widget.customerName}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            const Text(
+              'Cancellation Reason',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            
+            // Quick reason chips
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickReasons.map((reason) {
+                final isSelected = _selectedReason == reason;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedReason = reason),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.error.withValues(alpha: 0.1) : AppColors.background,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? AppColors.error : AppColors.border,
+                      ),
+                    ),
+                    child: Text(
+                      reason,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelected ? AppColors.error : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            
+            if (_selectedReason == 'Other') ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _reasonCtrl,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Enter cancellation reason...',
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 24),
+            
+            // Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Keep Order'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _selectedReason == null || _cancelling ? null : _cancelOrder,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: _cancelling
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Cancel Order'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
   }
 }

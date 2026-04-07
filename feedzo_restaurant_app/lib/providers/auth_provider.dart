@@ -41,6 +41,7 @@ class AuthProvider extends ChangeNotifier {
   double get deliveryRadius => _deliveryRadius;
   String get payoutUpi => _payoutUpi;
   String? get errorMessage => _errorMessage;
+  User? get user => FirebaseAuth.instance.currentUser;
 
   // Getters for new fields
   String get cuisine => _cuisine;

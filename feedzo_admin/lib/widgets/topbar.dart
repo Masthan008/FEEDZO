@@ -7,8 +7,9 @@ import '../providers/admin_provider.dart';
 class TopBar extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final VoidCallback? onBack;
 
-  const TopBar({super.key, required this.title, this.subtitle});
+  const TopBar({super.key, required this.title, this.subtitle, this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +24,13 @@ class TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (onBack != null) ...[
+            IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+              onPressed: onBack,
+            ),
+            const SizedBox(width: 8),
+          ],
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,

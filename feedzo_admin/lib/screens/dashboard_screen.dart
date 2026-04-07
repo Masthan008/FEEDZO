@@ -535,7 +535,7 @@ class _OrderRow extends StatelessWidget {
           SizedBox(
             width: 80,
             child: Text(
-              '#${id.substring(0, 5)}',
+              '#${id.length > 6 ? id.substring(id.length - 6) : id}',
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),

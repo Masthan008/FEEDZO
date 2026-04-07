@@ -12,7 +12,12 @@
           "package_name": "com.feedzo.admin"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBuuzFxTXP_vYFAdgMPM-_GU8IAQrcXxqI"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -31,7 +41,20 @@
           "package_name": "com.feedzo.customer"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "138473944117-bv6mq7id7ub2bv08514fjv0ikfifotr8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.feedzo.customer",
+            "certificate_hash": "9fc76a366d4096ff181f54bc232787a766df0b94"
+          }
+        },
+        {
+          "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBuuzFxTXP_vYFAdgMPM-_GU8IAQrcXxqI"
@@ -39,7 +62,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -50,7 +78,20 @@
           "package_name": "com.feedzo.driver"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "138473944117-u3927u5vu90fqp7fuq5le6o4md1brran.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.feedzo.driver",
+            "certificate_hash": "9fc76a366d4096ff181f54bc232787a766df0b94"
+          }
+        },
+        {
+          "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBuuzFxTXP_vYFAdgMPM-_GU8IAQrcXxqI"
@@ -58,7 +99,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -69,7 +115,20 @@
           "package_name": "com.feedzo.restaurant"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "138473944117-60tbktp47h2ts0u9bebr572j85u8ac46.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.feedzo.restaurant",
+            "certificate_hash": "9fc76a366d4096ff181f54bc232787a766df0b94"
+          }
+        },
+        {
+          "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBuuzFxTXP_vYFAdgMPM-_GU8IAQrcXxqI"
@@ -77,7 +136,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "138473944117-0i1q6j21kfll86q3261m2sal6e27duc5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

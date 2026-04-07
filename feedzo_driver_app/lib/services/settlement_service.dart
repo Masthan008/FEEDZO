@@ -43,6 +43,13 @@ class SettlementService {
   Future<void> submitCash(double amount) async {
     if (_driverId == null) return;
     final ref = _db.collection('settlements').doc(_driverId);
+    
+    // Get driver info for the submission record
+    final driverDoc = await _db.collection('drivers').doc(_driverId).get();
+    final driverData = driverDoc.data() ?? {};
+    final driverName = driverData['name'] ?? 'Unknown Driver';
+    final driverPhone = driverData['phone'] ?? '';
+    
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       if (!snap.exists) return;
@@ -53,6 +60,19 @@ class SettlementService {
         'pending': (pending - amount).clamp(0, double.infinity),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+    });
+    
+    // Create submission record for admin visibility
+    await _db.collection('driverSubmissions').add({
+      'driverId': _driverId,
+      'driverName': driverName,
+      'driverPhone': driverPhone,
+      'amount': amount,
+      'status': 'pending', // pending, verified, rejected
+      'submittedAt': FieldValue.serverTimestamp(),
+      'verifiedAt': null,
+      'verifiedBy': null,
+      'notes': null,
     });
   }
 }

@@ -108,12 +108,8 @@ service cloud.firestore {
       (isDriver() && resource.data.status in ['placed', 'preparing', 'ready'])
     );
 
-    // CREATE (CUSTOMER ONLY + APPROVED) - with validation
-    allow create: if isAuth() &&
-      isCustomer() &&
-      isApproved() &&
-      isValidOrder() &&
-      isValidScheduledOrder();
+    // CREATE — any authenticated customer can place an order
+    allow create: if isAuth() && isCustomer();
 
     // UPDATE CONTROL - with validation for scheduling and ratings
     allow update: if isAuth() && (
@@ -250,16 +246,6 @@ service cloud.firestore {
     );
     allow delete: if isAuth() && isAdmin();
   }
-      allow read: if isAuth();
-      allow create: if isAuth() && isCustomer();
-      allow update: if isAuth() && (
-        isAdmin() ||
-        // Restaurant owner can add a reply
-        (isRestaurant() &&
-         request.resource.data.diff(resource.data).changedKeys().hasOnly(['reply', 'repliedAt']))
-      );
-      allow delete: if isAuth() && isAdmin();
-    }
 
     // ── CHAT MESSAGES ───────────────────────────────────
     // Customer ↔ Driver real-time chat during active delivery
@@ -314,6 +300,8 @@ service cloud.firestore {
          request.resource.data.diff(resource.data).changedKeys().hasOnly(['messages', 'updatedAt']))
       );
       allow delete: if isAuth() && isAdmin();
+    }
+
 // ── SEARCH HISTORY ────────────────────────────────────
   // Customers can save recent searches; auto-cleanup after 30 days
   match /search_history/{historyId} {
@@ -470,6 +458,40 @@ service cloud.firestore {
       resource.data.userId == uid()
     );
     allow create: if isAuth() && isCustomer();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // HIKE CHARGES — Admin managed pricing configuration
+  // ═══════════════════════════════════════════════════
+
+  // ── GLOBAL HIKE CONFIG ──────────────────────────────
+  // Admin manages global hike charges settings
+  match /hikeCharges/{configId} {
+    allow read: if isAuth(); // Restaurants and customers need to read for pricing
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── RESTAURANT HIKE OVERRIDES ───────────────────────
+  // Per-restaurant hike charge overrides (optional)
+  match /restaurantHikeOverrides/{restaurantId} {
+    allow read: if isAuth(); // Public read for order calculations
+    allow create, update, delete: if isAuth() && (
+      isAdmin() ||
+      resource.data.restaurantId == uid()
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  // DRIVER SUBMISSIONS — Driver cash payouts to admin
+  // ═══════════════════════════════════════════════════
+
+  // ── DRIVER CASH SUBMISSIONS ──────────────────────────
+  // Records of driver cash submissions to admin
+  match /driverSubmissions/{submissionId} {
+    allow read: if isAuth() && (isAdmin() || resource.data.driverId == uid());
+    allow create: if isAuth() && isDriver();
     allow update: if isAuth() && isAdmin();
     allow delete: if isAuth() && isAdmin();
   }

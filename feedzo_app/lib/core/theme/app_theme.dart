@@ -70,18 +70,25 @@ class AppShape {
 class AppTheme {
   static ThemeData get light => ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
+        colorScheme: const ColorScheme.light(
           primary: AppColors.primary,
+          secondary: AppColors.accent,
           surface: AppColors.surface,
-          brightness: Brightness.light,
+          surfaceContainerHighest: AppColors.surfaceVariant,
+          surfaceContainerHigh: AppColors.surface,
+          surfaceContainer: AppColors.surface,
+          surfaceContainerLow: AppColors.surface,
+          surfaceContainerLowest: Colors.white,
+          onSurface: AppColors.textPrimary,
+          onSurfaceVariant: AppColors.textSecondary,
         ),
         scaffoldBackgroundColor: AppColors.background,
         textTheme: GoogleFonts.interTextTheme(),
         appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.surface,
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
-          scrolledUnderElevation: 1,
+          scrolledUnderElevation: 0.5,
           centerTitle: false,
           titleTextStyle: GoogleFonts.inter(
             color: AppColors.textPrimary,
@@ -137,6 +144,7 @@ class AppTheme {
         ),
         cardTheme: CardThemeData(
           color: AppColors.surface,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppShape.radiusLarge)),
@@ -168,8 +176,14 @@ class AppTheme {
               borderRadius: BorderRadius.circular(AppShape.radiusMedium)),
         ),
         dialogTheme: DialogThemeData(
+          backgroundColor: AppColors.surface,
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppShape.radiusXL)),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: AppColors.surface,
+          surfaceTintColor: Colors.transparent,
         ),
         chipTheme: ChipThemeData(
           shape: RoundedRectangleBorder(
@@ -180,18 +194,20 @@ class AppTheme {
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
+        colorScheme: const ColorScheme.dark(
           primary: AppColors.primary,
+          secondary: AppColors.accent,
           surface: AppColors.darkSurface,
-          brightness: Brightness.dark,
+          onSurface: AppColors.darkTextPrimary,
+          onSurfaceVariant: AppColors.darkTextSecondary,
         ),
         scaffoldBackgroundColor: AppColors.darkBackground,
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         appBarTheme: AppBarTheme(
           backgroundColor: AppColors.darkSurface,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
-          scrolledUnderElevation: 1,
+          scrolledUnderElevation: 0.5,
           centerTitle: false,
           titleTextStyle: GoogleFonts.inter(
             color: AppColors.darkTextPrimary,

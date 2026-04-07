@@ -53,7 +53,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: AppColors.accent,
                         borderRadius: AppShape.round,
                       ),
                       child: Text(
@@ -150,7 +150,7 @@ class _OrderCard extends StatelessWidget {
       case OrderStatus.placed:
         return AppColors.warning;
       case OrderStatus.preparing:
-        return AppColors.primary;
+        return const Color(0xFF2563EB); // Blue
       case OrderStatus.ready:
         return AppColors.success;
       case OrderStatus.picked:

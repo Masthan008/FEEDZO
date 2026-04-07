@@ -184,7 +184,7 @@ class FirestoreService {
         tx.set(counterRef, {'orders': 1});
       }
 
-      final displayId = '#${nextId.toString().padLeft(4, '0')}';
+      final displayId = 'ORD${nextId.toString().padLeft(4, '0')}';
       final docRef = orders.doc(displayId);
       
       final data = order.toMap();

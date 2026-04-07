@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../data/models/order_model.dart';
@@ -7,6 +8,8 @@ class OrderProvider extends ChangeNotifier {
   List<Order> _orders = [];
   bool _isPlacing = false;
   bool _isLoading = true;
+  StreamSubscription? _ordersSub;
+  String? _currentCustomerId;
 
   List<Order> get orders => _orders;
   bool get isPlacing => _isPlacing;
@@ -21,11 +24,26 @@ class OrderProvider extends ChangeNotifier {
       .toList();
 
   void init(String customerId) {
-    FirestoreService.watchCustomerOrders(customerId).listen((data) {
-      _orders = data;
-      _isLoading = false;
-      notifyListeners();
-    });
+    // Prevent duplicate subscriptions for the same customer
+    if (_currentCustomerId == customerId && _ordersSub != null) return;
+
+    _ordersSub?.cancel();
+    _currentCustomerId = customerId;
+    _isLoading = true;
+
+    _ordersSub = FirestoreService.watchCustomerOrders(customerId).listen(
+      (data) {
+        _orders = data;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint('[OrderProvider] Stream error: $error');
+        _isLoading = false;
+        _orders = [];
+        notifyListeners();
+      },
+    );
   }
 
   /// Generates a 4-digit OTP for delivery verification.
@@ -57,11 +75,20 @@ class OrderProvider extends ChangeNotifier {
   }
 
   void initRestaurant(String restaurantId) {
-    FirestoreService.watchRestaurantOrders(restaurantId).listen((data) {
-      _orders = data;
-      _isLoading = false;
-      notifyListeners();
-    });
+    _ordersSub?.cancel();
+    _ordersSub = FirestoreService.watchRestaurantOrders(restaurantId).listen(
+      (data) {
+        _orders = data;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint('[OrderProvider] Restaurant stream error: $error');
+        _isLoading = false;
+        _orders = [];
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> updateStatus(String orderId, OrderStatus status) async {
@@ -71,5 +98,10 @@ class OrderProvider extends ChangeNotifier {
   Future<void> acceptOrder(String orderId) => updateStatus(orderId, OrderStatus.preparing);
   Future<void> rejectOrder(String orderId) => updateStatus(orderId, OrderStatus.cancelled);
   Future<void> markReady(String orderId) => updateStatus(orderId, OrderStatus.ready);
-}
 
+  @override
+  void dispose() {
+    _ordersSub?.cancel();
+    super.dispose();
+  }
+}

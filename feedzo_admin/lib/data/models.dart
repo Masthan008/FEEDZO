@@ -322,3 +322,141 @@ class SystemSettings {
 
   SystemSettings({this.codEnabled = true, this.driverSettlementEnabled = true});
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HIKE CHARGES — Admin managed pricing configuration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class HikeChargesConfig {
+  final String id;
+  double packagingCharges;      // Fixed packaging charge per order (Rs.)
+  double deliveryCharges;       // Base delivery charge (Rs.)
+  double deliveryChargePerKm;   // Per km delivery charge (Rs.)
+  double hikeMultiplier;      // Surge pricing multiplier (%)
+  double commissionPlus;      // Additional commission on top of base (%)
+  double minimumOrderValue;   // Minimum order to avoid small order fee
+  double smallOrderFee;       // Fee for orders below minimum
+  bool surgeEnabled;          // Enable surge pricing during peak hours
+  DateTime? peakHoursStart;   // Surge pricing start time
+  DateTime? peakHoursEnd;     // Surge pricing end time
+  final DateTime updatedAt;
+
+  HikeChargesConfig({
+    required this.id,
+    this.packagingCharges = 0,
+    this.deliveryCharges = 0,
+    this.deliveryChargePerKm = 0,
+    this.hikeMultiplier = 0,
+    this.commissionPlus = 0,
+    this.minimumOrderValue = 0,
+    this.smallOrderFee = 0,
+    this.surgeEnabled = false,
+    this.peakHoursStart,
+    this.peakHoursEnd,
+    required this.updatedAt,
+  });
+
+  factory HikeChargesConfig.fromMap(String id, Map<String, dynamic> map) {
+    return HikeChargesConfig(
+      id: id,
+      packagingCharges: ((map['packagingCharges'] ?? 0) as num).toDouble(),
+      deliveryCharges: ((map['deliveryCharges'] ?? 0) as num).toDouble(),
+      deliveryChargePerKm: ((map['deliveryChargePerKm'] ?? 0) as num).toDouble(),
+      hikeMultiplier: ((map['hikeMultiplier'] ?? 0) as num).toDouble(),
+      commissionPlus: ((map['commissionPlus'] ?? 0) as num).toDouble(),
+      minimumOrderValue: ((map['minimumOrderValue'] ?? 0) as num).toDouble(),
+      smallOrderFee: ((map['smallOrderFee'] ?? 0) as num).toDouble(),
+      surgeEnabled: map['surgeEnabled'] as bool? ?? false,
+      peakHoursStart: (map['peakHoursStart'] as Timestamp?)?.toDate(),
+      peakHoursEnd: (map['peakHoursEnd'] as Timestamp?)?.toDate(),
+      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'packagingCharges': packagingCharges,
+      'deliveryCharges': deliveryCharges,
+      'deliveryChargePerKm': deliveryChargePerKm,
+      'hikeMultiplier': hikeMultiplier,
+      'commissionPlus': commissionPlus,
+      'minimumOrderValue': minimumOrderValue,
+      'smallOrderFee': smallOrderFee,
+      'surgeEnabled': surgeEnabled,
+      'peakHoursStart': peakHoursStart != null ? Timestamp.fromDate(peakHoursStart!) : null,
+      'peakHoursEnd': peakHoursEnd != null ? Timestamp.fromDate(peakHoursEnd!) : null,
+      'updatedAt': Timestamp.fromDate(updatedAt),
+    };
+  }
+
+  // Calculate total hike for an order
+  double calculateHike({required double orderValue, required double distanceKm, bool isPeakHours = false}) {
+    double hike = packagingCharges;
+    
+    // Add delivery charges
+    hike += deliveryCharges + (deliveryChargePerKm * distanceKm);
+    
+    // Add small order fee if applicable
+    if (orderValue < minimumOrderValue && minimumOrderValue > 0) {
+      hike += smallOrderFee;
+    }
+    
+    // Apply surge multiplier during peak hours
+    if (surgeEnabled && isPeakHours && hikeMultiplier > 0) {
+      hike *= (1 + hikeMultiplier / 100);
+    }
+    
+    return hike;
+  }
+
+  // Calculate total commission
+  double calculateCommission(double orderValue, double baseCommissionRate) {
+    final totalRate = baseCommissionRate + (commissionPlus / 100);
+    return orderValue * totalRate;
+  }
+}
+
+// ─── Restaurant Hike Override ───────────────────────────────────────────────────
+
+class RestaurantHikeOverride {
+  final String restaurantId;
+  double? customPackagingCharges;
+  double? customDeliveryCharges;
+  double? customHikeMultiplier;
+  double? customCommissionPlus;
+  bool useGlobalSettings;
+  final DateTime updatedAt;
+
+  RestaurantHikeOverride({
+    required this.restaurantId,
+    this.customPackagingCharges,
+    this.customDeliveryCharges,
+    this.customHikeMultiplier,
+    this.customCommissionPlus,
+    this.useGlobalSettings = true,
+    required this.updatedAt,
+  });
+
+  factory RestaurantHikeOverride.fromMap(String id, Map<String, dynamic> map) {
+    return RestaurantHikeOverride(
+      restaurantId: id,
+      customPackagingCharges: map['customPackagingCharges'] != null ? ((map['customPackagingCharges'] as num).toDouble()) : null,
+      customDeliveryCharges: map['customDeliveryCharges'] != null ? ((map['customDeliveryCharges'] as num).toDouble()) : null,
+      customHikeMultiplier: map['customHikeMultiplier'] != null ? ((map['customHikeMultiplier'] as num).toDouble()) : null,
+      customCommissionPlus: map['customCommissionPlus'] != null ? ((map['customCommissionPlus'] as num).toDouble()) : null,
+      useGlobalSettings: map['useGlobalSettings'] as bool? ?? true,
+      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'customPackagingCharges': customPackagingCharges,
+      'customDeliveryCharges': customDeliveryCharges,
+      'customHikeMultiplier': customHikeMultiplier,
+      'customCommissionPlus': customCommissionPlus,
+      'useGlobalSettings': useGlobalSettings,
+      'updatedAt': Timestamp.fromDate(updatedAt),
+    };
+  }
+}

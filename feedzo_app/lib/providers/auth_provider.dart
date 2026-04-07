@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../data/models/user_model.dart';
 import '../services/firestore_service.dart';
 
@@ -77,7 +78,116 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  /// Sign in with Google
+  Future<bool> signInWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Trigger Google Sign-In flow
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      
+      if (googleUser == null) {
+        // User canceled the sign-in
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Obtain auth details from request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      
+      // Check if new user
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        // Create user document
+        final newUser = UserModel(
+          id: userCredential.user!.uid,
+          name: userCredential.user!.displayName ?? 'User',
+          email: userCredential.user!.email ?? '',
+          phone: userCredential.user!.phoneNumber ?? '',
+          avatarUrl: userCredential.user!.photoURL ?? '',
+        );
+        await FirestoreService.saveUser(newUser);
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = _friendlyError(e.code);
+    } catch (e) {
+      _errorMessage = 'Google Sign-In failed. Please try again.';
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
+  /// Sign in with Apple (for iOS)
+  Future<bool> signInWithApple() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final appleProvider = AppleAuthProvider();
+      final userCredential = await FirebaseAuth.instance.signInWithProvider(appleProvider);
+
+      // Check if new user
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        final newUser = UserModel(
+          id: userCredential.user!.uid,
+          name: userCredential.user!.displayName ?? 'User',
+          email: userCredential.user!.email ?? '',
+          phone: userCredential.user!.phoneNumber ?? '',
+          avatarUrl: userCredential.user!.photoURL ?? '',
+        );
+        await FirestoreService.saveUser(newUser);
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = _friendlyError(e.code);
+    } catch (e) {
+      _errorMessage = 'Apple Sign-In failed. Please try again.';
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
+  /// Enable guest mode for browsing without login
+  Future<void> enableGuestMode() async {
+    _isLoading = true;
+    notifyListeners();
+    
+    // Create anonymous user
+    try {
+      await FirebaseAuth.instance.signInAnonymously();
+    } catch (_) {
+      // Silent fail - allow local guest mode
+    }
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
+    await GoogleSignIn().signOut();
     await FirebaseAuth.instance.signOut();
   }
 
@@ -94,6 +204,8 @@ class AuthProvider extends ChangeNotifier {
         return 'Password is too weak. Use at least 6 characters.';
       case 'too-many-requests':
         return 'Too many attempts. Try again later.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email. Please sign in with your original method.';
       default:
         return 'Authentication failed. Please try again.';
     }

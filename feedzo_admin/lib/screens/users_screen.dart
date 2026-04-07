@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../core/theme.dart';
 import '../widgets/topbar.dart';
+import 'customer_detail_screen.dart';
 
 class UsersScreen extends StatelessWidget {
   const UsersScreen({super.key});
@@ -91,7 +92,11 @@ class _UserList extends StatelessWidget {
             child: Column(
               children: [
                 _TableHeader(showApproval: filter == 'pending'),
-                ...docs.map((doc) => _UserRow(doc: doc, showApproval: filter == 'pending')),
+                ...docs.map((doc) => _UserRow(
+                  doc: doc, 
+                  showApproval: filter == 'pending',
+                  isCustomer: filter == 'customer',
+                )),
               ],
             ),
           ),
@@ -119,8 +124,7 @@ class _TableHeader extends StatelessWidget {
         const Expanded(flex: 4, child: Text('Contact', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary))),
         const Expanded(flex: 2, child: Text('Role', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary))),
         const Expanded(flex: 2, child: Text('Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary))),
-        if (showApproval)
-          const Expanded(flex: 3, child: Text('Actions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary))),
+        const Expanded(flex: 3, child: Text('Actions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary))),
       ]),
     );
   }
@@ -129,13 +133,24 @@ class _TableHeader extends StatelessWidget {
 class _UserRow extends StatelessWidget {
   final QueryDocumentSnapshot doc;
   final bool showApproval;
-  const _UserRow({required this.doc, required this.showApproval});
+  final bool isCustomer;
+  
+  const _UserRow({required this.doc, required this.showApproval, this.isCustomer = false});
 
   Future<void> _approve() => FirebaseFirestore.instance
       .collection('users').doc(doc.id).update({'status': 'approved'});
 
   Future<void> _reject() => FirebaseFirestore.instance
       .collection('users').doc(doc.id).update({'status': 'rejected'});
+
+  void _viewDetails(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CustomerDetailScreen(customerId: doc.id),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,11 +205,13 @@ class _UserRow extends StatelessWidget {
           decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(20)),
           child: Text(status, style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.w600)),
         )),
-        if (showApproval)
-          Expanded(flex: 3, child: Wrap(spacing: 6, children: [
+        Expanded(flex: 3, child: Wrap(spacing: 6, children: [
+          if (showApproval) ...[
             _Btn(label: 'Approve', color: AppColors.primary, onTap: _approve),
             _Btn(label: 'Reject', color: AppColors.error, onTap: _reject),
-          ])),
+          ] else if (isCustomer && role == 'customer')
+            _Btn(label: 'View Details', color: AppColors.info, onTap: () => _viewDetails(context)),
+        ])),
       ]),
     );
   }

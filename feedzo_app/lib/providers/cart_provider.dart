@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/models/restaurant_model.dart';
 import '../data/models/order_model.dart';
+import '../services/hike_charges_service.dart';
 
 class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
@@ -8,6 +9,15 @@ class CartProvider extends ChangeNotifier {
   String? _restaurantName;
   String? _restaurantImage;
   double _deliveryFee = 0;
+
+  // ── Hike Charges ──
+  double _packagingCharge = 0;
+  double _deliveryCharge = 0;
+  double _smallOrderFee = 0;
+  double _surgeCharge = 0;
+  bool _isSurgeActive = false;
+  double _hikeMultiplier = 0;
+  bool _hikeChargesLoaded = false;
 
   // ── New checkout fields ──
   String? _deliveryInstructions;
@@ -30,9 +40,19 @@ class CartProvider extends ChangeNotifier {
   double get discount => _discount;
   DateTime? get scheduledFor => _scheduledFor;
 
+  // Hike charges getters
+  double get packagingCharge => _packagingCharge;
+  double get deliveryCharge => _deliveryCharge;
+  double get smallOrderFee => _smallOrderFee;
+  double get surgeCharge => _surgeCharge;
+  bool get isSurgeActive => _isSurgeActive;
+  double get hikeMultiplier => _hikeMultiplier;
+  bool get hikeChargesLoaded => _hikeChargesLoaded;
+  double get totalHikeCharges => _packagingCharge + _deliveryCharge + _smallOrderFee + _surgeCharge;
+
   double get subtotal => _items.fold(0.0, (sum, i) => sum + i.total);
-  double get taxAmount => subtotal * 0.05; // 5% GST placeholder
-  double get total => subtotal - _discount + _deliveryFee + taxAmount + _tipAmount;
+  double get taxAmount => (subtotal + totalHikeCharges) * 0.05; // 5% GST on items + hike
+  double get total => subtotal + totalHikeCharges + taxAmount + _tipAmount - _discount;
 
   bool get isEmpty => _items.isEmpty;
 
@@ -110,6 +130,40 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Calculate Hike Charges ──
+  Future<void> calculateHikeCharges({double distanceKm = 3.0}) async {
+    if (_restaurantId == null || _items.isEmpty) return;
+    
+    try {
+      final charges = await HikeChargesService.calculateCharges(
+        restaurantId: _restaurantId!,
+        orderValue: subtotal,
+        distanceKm: distanceKm,
+      );
+      
+      _packagingCharge = charges['packagingCharge'] as double;
+      _deliveryCharge = charges['deliveryCharge'] as double;
+      _smallOrderFee = charges['smallOrderFee'] as double;
+      _surgeCharge = charges['surgeCharge'] as double;
+      _isSurgeActive = charges['isSurge'] as bool;
+      _hikeMultiplier = charges['hikeMultiplier'] as double;
+      _hikeChargesLoaded = true;
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error calculating hike charges: $e');
+      // Use default values
+      _packagingCharge = 10;
+      _deliveryCharge = 20 + (5 * distanceKm);
+      _smallOrderFee = 0;
+      _surgeCharge = 0;
+      _isSurgeActive = false;
+      _hikeMultiplier = 0;
+      _hikeChargesLoaded = true;
+      notifyListeners();
+    }
+  }
+
   // ── Delivery Instructions ──
   void setDeliveryInstructions(String? instructions) {
     _deliveryInstructions = instructions;
@@ -170,6 +224,13 @@ class CartProvider extends ChangeNotifier {
     _couponCode = null;
     _discount = 0;
     _scheduledFor = null;
+    _packagingCharge = 0;
+    _deliveryCharge = 0;
+    _smallOrderFee = 0;
+    _surgeCharge = 0;
+    _isSurgeActive = false;
+    _hikeMultiplier = 0;
+    _hikeChargesLoaded = false;
     notifyListeners();
   }
 }
