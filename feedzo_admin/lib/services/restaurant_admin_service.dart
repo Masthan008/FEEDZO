@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../data/models.dart';
 
 /// Service for admin restaurant CRUD operations
@@ -114,13 +115,34 @@ class RestaurantAdminService {
             .toList());
   }
 
-  /// Get menu items for a restaurant
+  /// Get menu items for a restaurant (uses items collection like restaurant app)
   Stream<List<Map<String, dynamic>>> getMenuItems(String restaurantId) {
+    debugPrint('RestaurantAdminService: Fetching menu for restaurant $restaurantId');
+    
     return _firestore
-        .collection('restaurants')
-        .doc(restaurantId)
-        .collection('menu')
+        .collection('items')
+        .where('restaurantId', isEqualTo: restaurantId)
         .orderBy('createdAt', descending: true)
+        .snapshots()
+        .handleError((error) {
+          debugPrint('RestaurantAdminService: Menu query error: $error');
+        })
+        .map((snapshot) {
+          debugPrint('RestaurantAdminService: Menu loaded: ${snapshot.docs.length} items');
+          return snapshot.docs
+              .map((doc) => {
+                    'id': doc.id,
+                    ...doc.data(),
+                  })
+              .toList();
+        });
+  }
+  
+  /// Get menu items without ordering (fallback when index not ready)
+  Stream<List<Map<String, dynamic>>> getMenuItemsUnordered(String restaurantId) {
+    return _firestore
+        .collection('items')
+        .where('restaurantId', isEqualTo: restaurantId)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => {
@@ -301,7 +323,7 @@ class RestaurantAdminService {
   // MENU MANAGEMENT
   // ═════════════════════════════════════════════════════════════════════════════
 
-  /// Add menu item
+  /// Add menu item (uses items collection like restaurant app)
   Future<String?> addMenuItem(
     String restaurantId, {
     required String name,
@@ -315,11 +337,7 @@ class RestaurantAdminService {
     String? imageUrl,
   }) async {
     try {
-      final docRef = _firestore
-          .collection('restaurants')
-          .doc(restaurantId)
-          .collection('menu')
-          .doc();
+      final docRef = _firestore.collection('items').doc();
 
       await docRef.set({
         'restaurantId': restaurantId,
@@ -336,14 +354,15 @@ class RestaurantAdminService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      debugPrint('RestaurantAdminService: Added menu item ${docRef.id} for restaurant $restaurantId');
       return docRef.id;
     } catch (e) {
-      print('Error adding menu item: $e');
+      debugPrint('Error adding menu item: $e');
       return null;
     }
   }
 
-  /// Update menu item
+  /// Update menu item (uses items collection like restaurant app)
   Future<bool> updateMenuItem(
     String restaurantId,
     String itemId, {
@@ -372,32 +391,24 @@ class RestaurantAdminService {
       if (isBestseller != null) updateData['isBestseller'] = isBestseller;
       if (imageUrl != null) updateData['imageUrl'] = imageUrl;
 
-      await _firestore
-          .collection('restaurants')
-          .doc(restaurantId)
-          .collection('menu')
-          .doc(itemId)
-          .update(updateData);
+      await _firestore.collection('items').doc(itemId).update(updateData);
 
+      debugPrint('RestaurantAdminService: Updated menu item $itemId for restaurant $restaurantId');
       return true;
     } catch (e) {
-      print('Error updating menu item: $e');
+      debugPrint('Error updating menu item: $e');
       return false;
     }
   }
 
-  /// Delete menu item
+  /// Delete menu item (uses items collection like restaurant app)
   Future<bool> deleteMenuItem(String restaurantId, String itemId) async {
     try {
-      await _firestore
-          .collection('restaurants')
-          .doc(restaurantId)
-          .collection('menu')
-          .doc(itemId)
-          .delete();
+      await _firestore.collection('items').doc(itemId).delete();
+      debugPrint('RestaurantAdminService: Deleted menu item $itemId for restaurant $restaurantId');
       return true;
     } catch (e) {
-      print('Error deleting menu item: $e');
+      debugPrint('Error deleting menu item: $e');
       return false;
     }
   }

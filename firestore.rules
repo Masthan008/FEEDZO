@@ -730,5 +730,35 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow create, update, delete: if isAuth() && isAdmin();
   }
 
+  // ═══════════════════════════════════════════════════
+  // DRIVER COD & SETTLEMENTS
+  // ═══════════════════════════════════════════════════
+
+  // ── DRIVER SETTLEMENTS ──────────────────────────────
+  // Tracks COD collected and submitted by each driver
+  match /settlements/{driverId} {
+    allow read: if isAuth() && (isAdmin() || driverId == uid());
+    allow create: if isAuth() && driverId == uid();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      (driverId == uid() &&
+       request.resource.data.diff(resource.data).changedKeys()
+       .hasOnly(['codCollected', 'pending', 'updatedAt']))
+    );
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── DRIVER CASH SUBMISSIONS ─────────────────────────
+  // Records of cash submitted by drivers to admin
+  match /driverSubmissions/{submissionId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.driverId == uid()
+    );
+    allow create: if isAuth() && request.resource.data.driverId == uid();
+    allow update: if isAuth() && isAdmin(); // Only admin can verify/reject
+    allow delete: if isAuth() && isAdmin();
+  }
+
   }
 }

@@ -419,6 +419,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       _buildQuickActions(restaurant),
                       const SizedBox(height: 24),
 
+                      // Menu Preview Section
+                      _buildSectionTitle('Menu Preview'),
+                      const SizedBox(height: 12),
+                      _buildMenuPreview(),
+                      const SizedBox(height: 16),
+
                       // Menu Management Button
                       SizedBox(
                         width: double.infinity,
@@ -433,7 +439,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             ),
                           ),
                           icon: const Icon(Icons.restaurant_menu),
-                          label: const Text('Manage Menu'),
+                          label: const Text('Manage Full Menu'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -703,6 +709,198 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildMenuPreview() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _service.getMenuItems(widget.restaurantId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.error.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.error.withAlpha(50)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: AppColors.error),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Error loading menu: ${snapshot.error}',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final items = snapshot.data ?? [];
+
+        if (items.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.restaurant_menu, color: AppColors.textSecondary),
+                SizedBox(width: 12),
+                Text(
+                  'No menu items yet. Click "Manage Full Menu" to add items.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show first 5 items as preview
+        final previewItems = items.take(5).toList();
+        final remainingCount = items.length - previewItems.length;
+
+        return Column(
+          children: [
+            ...previewItems.map((item) => _buildMenuItemCard(item)),
+            if (remainingCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  '+ $remainingCount more items',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuItemCard(Map<String, dynamic> item) {
+    final name = item['name'] ?? 'Unnamed Item';
+    final price = (item['price'] as num?)?.toDouble() ?? 0.0;
+    final discount = (item['discount'] as num?)?.toDouble() ?? 0.0;
+    final isAvailable = item['isAvailable'] as bool? ?? true;
+    final isVeg = item['isVeg'] as bool? ?? true;
+    final category = item['category'] ?? 'Other';
+
+    final discountedPrice = price - (price * discount / 100);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          // Veg/Non-veg indicator
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: isVeg ? Colors.green : Colors.red,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Item info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    if (!isAvailable)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.textSecondary.withAlpha(30),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Unavailable',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  category,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary.withAlpha(180),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Price
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (discount > 0) ...[
+                Text(
+                  '₹${price.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    decoration: TextDecoration.lineThrough,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  '₹${discountedPrice.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.statusDelivered,
+                  ),
+                ),
+              ] else
+                Text(
+                  '₹${price.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

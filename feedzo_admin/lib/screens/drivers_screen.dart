@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../core/theme.dart';
 import '../widgets/topbar.dart';
+import 'drivers/driver_cod_screen.dart';
 
 class DriversScreen extends StatefulWidget {
   const DriversScreen({super.key});
@@ -17,7 +18,26 @@ class _DriversScreenState extends State<DriversScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const TopBar(title: 'Drivers', subtitle: 'Monitor driver activity and assignments'),
+        TopBar(
+          title: 'Drivers',
+          subtitle: 'Monitor driver activity and assignments',
+          actions: [
+            ElevatedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DriverCodScreen()),
+              ),
+              icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+              label: const Text('COD Tracking'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('drivers').snapshots(),

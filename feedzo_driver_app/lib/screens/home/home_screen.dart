@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../orders/order_details_screen.dart';
 import '../../services/driver_notification_service.dart';
+import '../../services/settlement_service.dart';
 import '../../models/driver_notification_model.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
   bool _isOnline = true;
   final DriverNotificationService _notificationService = DriverNotificationService();
+  final SettlementService _settlementService = SettlementService();
 
   @override
   void initState() {
@@ -129,11 +131,20 @@ class _HomeScreenState extends State<HomeScreen> {
         final maxConcurrentOrders = (driverData['maxConcurrentOrders'] as num?)?.toInt() ?? 3;
         final allowMultiOrder = driverData['allowMultiOrderAssignment'] as bool? ?? true;
 
-        // Fetch active orders using activeOrderIds
-        return StreamBuilder<List<DocumentSnapshot>>(
-          stream: _getActiveOrdersStream(activeOrderIds),
-          builder: (context, ordersSnap) {
-            final activeDocs = ordersSnap.data?.where((doc) => doc.exists).toList() ?? [];
+        // Fetch settlement data for COD tracking
+        return StreamBuilder<DocumentSnapshot>(
+          stream: _settlementService.streamMySettlement(),
+          builder: (context, settlementSnap) {
+            final settlementData = settlementSnap.data?.data() as Map<String, dynamic>? ?? {};
+            final totalCodCollected = (settlementData['codCollected'] as num?)?.toDouble() ?? 0.0;
+            final totalSubmitted = (settlementData['submitted'] as num?)?.toDouble() ?? 0.0;
+            final pendingCod = (settlementData['pending'] as num?)?.toDouble() ?? 0.0;
+
+            // Fetch active orders using activeOrderIds
+            return StreamBuilder<List<DocumentSnapshot>>(
+              stream: _getActiveOrdersStream(activeOrderIds),
+              builder: (context, ordersSnap) {
+                final activeDocs = ordersSnap.data?.where((doc) => doc.exists).toList() ?? [];
 
             return Scaffold(
               backgroundColor: AppColors.background,
@@ -272,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               _QuickStat(
                                 icon: Icons.money_rounded,
                                 label: 'COD Collected',
-                                value: '₹${codCollected.toStringAsFixed(0)}',
+                                value: '₹${totalCodCollected.toStringAsFixed(0)}',
                               ),
                               const SizedBox(width: 12),
                               _QuickStat(
@@ -281,6 +292,81 @@ class _HomeScreenState extends State<HomeScreen> {
                                 value: '${activeDocs.length}/$maxConcurrentOrders',
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 12),
+                          // COD Summary Card
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: AppShape.medium,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      const Icon(
+                                        Icons.account_balance_wallet_outlined,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '₹${pendingCod.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Pending COD',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.8),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 40,
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle_outline,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '₹${totalSubmitted.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Submitted',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.8),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -480,6 +566,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+            );
+              },
             );
           },
         );
