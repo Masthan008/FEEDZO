@@ -116,16 +116,28 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       // 1. Upload images to Cloudinary
       List<String> imageUrls = [];
-      for (var file in _images) {
+      List<String> failedUploads = [];
+      
+      for (int i = 0; i < _images.length; i++) {
+        final file = _images[i];
+        debugPrint('Signup: Uploading image ${i + 1}/${_images.length}: ${file.path}');
+        
         final url = await CloudinaryService.uploadImage(
           file,
           folder: 'restaurants',
         );
-        if (url != null) imageUrls.add(url);
+        
+        if (url != null) {
+          imageUrls.add(url);
+          debugPrint('Signup: Image ${i + 1} uploaded successfully');
+        } else {
+          failedUploads.add('Image ${i + 1}');
+          debugPrint('Signup: Image ${i + 1} failed to upload');
+        }
       }
 
-      if (imageUrls.length < _images.length) {
-        throw 'Some images failed to upload. Please try again.';
+      if (failedUploads.isNotEmpty) {
+        throw '${failedUploads.join(", ")} failed to upload. Please check your internet connection and try again.';
       }
 
       // 2. Sign up with Firebase

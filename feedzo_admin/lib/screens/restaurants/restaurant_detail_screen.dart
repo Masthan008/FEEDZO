@@ -329,10 +329,10 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 50),
                         Container(
-                          width: 80,
-                          height: 80,
+                          width: 70,
+                          height: 70,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
@@ -342,19 +342,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             child: Text(
                               restaurant.name.isNotEmpty ? restaurant.name[0].toUpperCase() : '?',
                               style: TextStyle(
-                                fontSize: 36,
+                                fontSize: 32,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Text(
                           restaurant.name,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 24,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -362,7 +362,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           restaurant.cuisine,
                           style: TextStyle(
                             color: Colors.white.withAlpha(230),
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                         ),
                       ],

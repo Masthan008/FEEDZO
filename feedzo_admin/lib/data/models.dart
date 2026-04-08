@@ -194,7 +194,7 @@ class AdminRestaurant {
       email: map['email'] as String? ?? '',
       phone: map['phone'] as String? ?? '',
       cuisine: map['cuisine'] as String? ?? '',
-      location: map['location'] as String? ?? map['address'] as String? ?? '',
+      location: _parseLocation(map['location']) ?? map['address'] as String? ?? '',
       address: map['address'] as String?,
       rating: ((map['rating'] ?? 5.0) as num).toDouble(),
       status: RestaurantStatus.values.firstWhere((e) => e.name == (map['status'] ?? 'pendingApproval'), orElse: () => RestaurantStatus.pendingApproval),
@@ -216,6 +216,22 @@ class AdminRestaurant {
       documents: map['documents'] as Map<String, dynamic>?,
       autoOpenClose: map['autoOpenClose'] as Map<String, dynamic>?,
     );
+  }
+
+  /// Helper to parse location from String or Map format
+  static String? _parseLocation(dynamic location) {
+    if (location == null) return null;
+    if (location is String) return location;
+    if (location is Map<String, dynamic>) {
+      // Handle GeoPoint-like format: {'lat': x, 'lng': y}
+      final lat = location['lat'] ?? location['latitude'];
+      final lng = location['lng'] ?? location['longitude'];
+      if (lat != null && lng != null) {
+        return 'Lat: $lat, Lng: $lng';
+      }
+      return location.toString();
+    }
+    return location.toString();
   }
 
   double get commissionEarned => totalRevenue * commissionRate;

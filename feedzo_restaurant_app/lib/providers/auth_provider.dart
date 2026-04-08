@@ -312,10 +312,13 @@ class AuthProvider extends ChangeNotifier {
       }
       
       // Sync commission rate
-      final newCommission = (data['commission'] ?? 10.0).toDouble();
+      final rawCommission = data['commission'];
+      final newCommission = (rawCommission ?? 10.0).toDouble();
+      debugPrint('AuthProvider: Commission sync - raw: $rawCommission, parsed: $newCommission, current: $_commissionRate');
       if (newCommission != _commissionRate) {
         _commissionRate = newCommission;
         hasChanges = true;
+        debugPrint('AuthProvider: Commission updated to $_commissionRate');
       }
       
       // Sync documents
