@@ -251,6 +251,63 @@ class _MenuItemCard extends StatelessWidget {
                           ),
                         ],
                       ),
+                      // Stock Status Indicator
+                      if (item.trackInventory) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: item.isOutOfStock
+                                ? Colors.red.shade50
+                                : item.isLowStock
+                                    ? Colors.orange.shade50
+                                    : Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: item.isOutOfStock
+                                  ? Colors.red
+                                  : item.isLowStock
+                                      ? Colors.orange
+                                      : Colors.green,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                item.isOutOfStock
+                                    ? Icons.error
+                                    : item.isLowStock
+                                        ? Icons.warning
+                                        : Icons.check_circle,
+                                size: 14,
+                                color: item.isOutOfStock
+                                    ? Colors.red
+                                    : item.isLowStock
+                                        ? Colors.orange
+                                        : Colors.green,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                item.isOutOfStock
+                                    ? 'Out of Stock'
+                                    : item.isLowStock
+                                        ? 'Low Stock: ${item.stockQuantity}'
+                                        : 'Stock: ${item.stockQuantity}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: item.isOutOfStock
+                                      ? Colors.red
+                                      : item.isLowStock
+                                          ? Colors.orange
+                                          : Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -375,13 +432,17 @@ class _MenuItemFormState extends State<_MenuItemForm> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _priceCtrl;
   late final TextEditingController _discountCtrl;
-  late final TextEditingController _categoryCtrl; // Added category controller
+  late final TextEditingController _categoryCtrl;
+  late final TextEditingController _stockCtrl;
+  late final TextEditingController _lowStockCtrl;
 
   File? _imageFile;
   String? _currentImageUrl;
   bool _isSaving = false;
   bool _isVeg = true;
   bool _isBestseller = false;
+  bool _trackInventory = false;
+  bool _unlimitedStock = true;
 
   @override
   void initState() {
@@ -397,9 +458,17 @@ class _MenuItemFormState extends State<_MenuItemForm> {
     _categoryCtrl = TextEditingController(
       text: widget.item?.category ?? 'Main Course',
     );
+    _stockCtrl = TextEditingController(
+      text: widget.item?.stockQuantity.toString() ?? '10',
+    );
+    _lowStockCtrl = TextEditingController(
+      text: widget.item?.lowStockThreshold.toString() ?? '5',
+    );
     _currentImageUrl = widget.item?.imageUrl;
     _isVeg = widget.item?.isVeg ?? true;
     _isBestseller = widget.item?.isBestseller ?? false;
+    _trackInventory = widget.item?.trackInventory ?? false;
+    _unlimitedStock = widget.item?.unlimitedStock ?? true;
   }
 
   @override
@@ -409,6 +478,8 @@ class _MenuItemFormState extends State<_MenuItemForm> {
     _priceCtrl.dispose();
     _discountCtrl.dispose();
     _categoryCtrl.dispose();
+    _stockCtrl.dispose();
+    _lowStockCtrl.dispose();
     super.dispose();
   }
 
@@ -445,6 +516,9 @@ class _MenuItemFormState extends State<_MenuItemForm> {
       final provider = context.read<MenuProvider>();
       final user = FirebaseAuth.instance.currentUser;
 
+      final stockQty = int.tryParse(_stockCtrl.text) ?? 10;
+      final lowStock = int.tryParse(_lowStockCtrl.text) ?? 5;
+
       if (widget.item == null) {
         await provider.addItem(
           MenuItemModel(
@@ -454,11 +528,15 @@ class _MenuItemFormState extends State<_MenuItemForm> {
             description: _descCtrl.text.trim(),
             price: double.parse(_priceCtrl.text),
             discount: double.tryParse(_discountCtrl.text) ?? 0.0,
-            isAvailable: true,
+            isAvailable: _unlimitedStock || stockQty > 0,
             imageUrl: imageUrl,
             isVeg: _isVeg,
             category: _categoryCtrl.text.trim(),
             isBestseller: _isBestseller,
+            trackInventory: _trackInventory,
+            unlimitedStock: _unlimitedStock,
+            stockQuantity: _unlimitedStock ? -1 : stockQty,
+            lowStockThreshold: lowStock,
           ),
         );
       } else {
@@ -475,6 +553,10 @@ class _MenuItemFormState extends State<_MenuItemForm> {
             isVeg: _isVeg,
             category: _categoryCtrl.text.trim(),
             isBestseller: _isBestseller,
+            trackInventory: _trackInventory,
+            unlimitedStock: _unlimitedStock,
+            stockQuantity: _unlimitedStock ? -1 : stockQty,
+            lowStockThreshold: lowStock,
           ),
         );
       }
@@ -631,6 +713,111 @@ class _MenuItemFormState extends State<_MenuItemForm> {
                     activeColor: Colors.orange,
                   ),
                 ],
+              ),
+              const Divider(height: 32),
+              
+              // Inventory Management Section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.inventory_2_outlined, 
+                              color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Inventory Tracking',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _trackInventory,
+                          onChanged: (v) => setState(() {
+                            _trackInventory = v;
+                            if (!v) _unlimitedStock = true;
+                          }),
+                          activeColor: Colors.blue,
+                        ),
+                      ],
+                    ),
+                    if (_trackInventory) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Unlimited Stock',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Switch(
+                            value: _unlimitedStock,
+                            onChanged: (v) => setState(() => _unlimitedStock = v),
+                            activeColor: Colors.green,
+                          ),
+                        ],
+                      ),
+                      if (!_unlimitedStock) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _stockCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Current Stock',
+                                  hintText: '10',
+                                  prefixIcon: Icon(Icons.store),
+                                ),
+                                validator: (v) {
+                                  if (!_unlimitedStock && (v == null || v.isEmpty)) {
+                                    return 'Required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _lowStockCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Low Stock Alert',
+                                  hintText: '5',
+                                  prefixIcon: Icon(Icons.warning),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Item will be auto-marked unavailable when stock reaches 0',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(

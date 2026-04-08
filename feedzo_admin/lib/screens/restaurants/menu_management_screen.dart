@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../services/restaurant_admin_service.dart';
+import '../../services/hike_charges_service.dart';
+import '../../services/monthly_report_service.dart';
+import '../../data/models.dart';
 
 class MenuManagementScreen extends StatefulWidget {
   final String restaurantId;
@@ -278,6 +282,16 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.description_outlined),
+            tooltip: 'Monthly Report',
+            onPressed: () => _showMonthlyReportDialog(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.price_change_outlined),
+            tooltip: 'Hike Charges',
+            onPressed: () => _showHikeChargesDialog(),
+          ),
+          IconButton(
             icon: const Icon(Icons.add_circle),
             onPressed: () => _showItemDialog(),
           ),
@@ -434,6 +448,289 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // MONTHLY REPORT DIALOG
+  // ═════════════════════════════════════════════════════════════════════════════
+
+  Future<void> _showMonthlyReportDialog() async {
+    final now = DateTime.now();
+    DateTime selectedMonth = DateTime(now.year, now.month - 1, 1);
+    bool isGenerating = false;
+    String? generatedUrl;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.description_outlined, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Monthly Report - ${widget.restaurantName}',
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month, color: AppColors.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Report for: ${DateFormat('MMMM yyyy').format(selectedMonth)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedMonth,
+                            firstDate: DateTime(2024),
+                            lastDate: DateTime.now(),
+                            helpText: 'Select Month for Report',
+                            selectableDayPredicate: (day) => day.day == 1,
+                          );
+                          if (picked != null) {
+                            setDialogState(() => selectedMonth = DateTime(picked.year, picked.month, 1));
+                          }
+                        },
+                        child: const Text('Change'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (generatedUrl == null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isGenerating
+                          ? null
+                          : () async {
+                              setDialogState(() => isGenerating = true);
+                              final url = await MonthlyReportService.generateAndUploadReport(
+                                restaurantId: widget.restaurantId,
+                                restaurantName: widget.restaurantName,
+                                month: selectedMonth,
+                              );
+                              setDialogState(() {
+                                isGenerating = false;
+                                generatedUrl = url;
+                              });
+                            },
+                      icon: isGenerating
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.play_circle_outline),
+                      label: Text(isGenerating ? 'Generating...' : 'Generate Report'),
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                        const SizedBox(height: 12),
+                        const Text('Report Generated Successfully!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {},
+                                icon: const Icon(Icons.open_in_new),
+                                label: const Text('View Report'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                const Text('Previous Reports', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 150,
+                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: MonthlyReportService.watchReportHistory(widget.restaurantId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final reports = snapshot.data ?? [];
+                      if (reports.isEmpty) {
+                        return Center(child: Text('No previous reports', style: TextStyle(color: Colors.grey.shade600)));
+                      }
+                      return ListView.builder(
+                        itemCount: reports.length,
+                        itemBuilder: (context, index) {
+                          final report = reports[index];
+                          final month = (report['month'] as Timestamp).toDate();
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.picture_as_pdf, color: AppColors.primary),
+                            title: Text(DateFormat('MMMM yyyy').format(month)),
+                            subtitle: Text('Orders: ${report['totalOrders'] ?? 0} | Value: ₹${(report['totalOrderValue'] as num?)?.toStringAsFixed(0) ?? '0'}', style: const TextStyle(fontSize: 12)),
+                            trailing: IconButton(icon: const Icon(Icons.download, size: 18), onPressed: () {}),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showHikeChargesDialog() async {
+    final override = await HikeChargesService.getRestaurantOverride(widget.restaurantId);
+    final globalConfig = await HikeChargesService.getGlobalConfig();
+    bool useGlobal = override?.useGlobalSettings ?? true;
+    final hikeCtrl = TextEditingController(text: (override?.customHikeMultiplier ?? globalConfig?.hikeMultiplier ?? 10).toString());
+    final packagingCtrl = TextEditingController(text: (override?.customPackagingCharges ?? globalConfig?.packagingCharges ?? 10).toString());
+    final deliveryCtrl = TextEditingController(text: (override?.customDeliveryCharges ?? globalConfig?.deliveryCharges ?? 20).toString());
+
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.price_change_outlined, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Expanded(child: Text('Hike Charges - ${widget.restaurantName}', style: const TextStyle(fontSize: 18))),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: useGlobal ? Colors.green.shade50 : Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: useGlobal ? Colors.green.shade200 : Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(useGlobal ? 'Using Global Settings' : 'Custom Settings', style: TextStyle(fontWeight: FontWeight.bold, color: useGlobal ? Colors.green.shade700 : Colors.orange.shade700)),
+                            Text(useGlobal ? 'Restaurant follows system-wide hike charge settings' : 'Restaurant has custom hike charge settings', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          ],
+                        ),
+                      ),
+                      Switch(value: useGlobal, onChanged: (v) => setDialogState(() => useGlobal = v), activeColor: Colors.green),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (!useGlobal) ...[
+                  const Text('Custom Hike Charges', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: packagingCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Packaging Charges (₹)', prefixIcon: Icon(Icons.shopping_bag_outlined), border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: deliveryCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Delivery Charges (₹)', prefixIcon: Icon(Icons.delivery_dining_outlined), border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: hikeCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Hike Multiplier (%)', prefixIcon: Icon(Icons.trending_up_outlined), border: OutlineInputBorder(), helperText: 'Percentage added during peak hours'),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                if (globalConfig != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Global Settings (Reference)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        const SizedBox(height: 8),
+                        Text('Packaging: ₹${globalConfig.packagingCharges}'),
+                        Text('Delivery: ₹${globalConfig.deliveryCharges}'),
+                        Text('Hike Multiplier: ${globalConfig.hikeMultiplier}%'),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                final newOverride = RestaurantHikeOverride(
+                  restaurantId: widget.restaurantId,
+                  useGlobalSettings: useGlobal,
+                  customPackagingCharges: double.tryParse(packagingCtrl.text) ?? globalConfig?.packagingCharges ?? 10,
+                  customDeliveryCharges: double.tryParse(deliveryCtrl.text) ?? globalConfig?.deliveryCharges ?? 20,
+                  customHikeMultiplier: double.tryParse(hikeCtrl.text) ?? globalConfig?.hikeMultiplier ?? 10,
+                  updatedAt: DateTime.now(),
+                );
+                await HikeChargesService.saveRestaurantOverride(newOverride);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(useGlobal ? 'Now using global hike charge settings' : 'Custom hike charges saved for ${widget.restaurantName}'),
+                      backgroundColor: useGlobal ? Colors.green : AppColors.primary,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }

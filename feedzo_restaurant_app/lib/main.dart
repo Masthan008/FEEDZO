@@ -16,13 +16,59 @@ import 'screens/auth/waiting_approval_screen.dart';
 import 'screens/home/home_shell.dart';
 
 import 'services/onesignal_service.dart';
+import 'screens/orders/order_detail_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await OneSignalService.init();
+
+  // Initialize OneSignal with navigation callback
+  await OneSignalService.init(
+    onNavigate: (type, data) {
+      _handleNotificationNavigation(type, data);
+    },
+  );
+
   runApp(const FeedzoRestaurantApp());
+}
+
+/// Handle navigation when user taps notification
+void _handleNotificationNavigation(String type, Map<String, dynamic>? data) {
+  final context = navigatorKey.currentContext;
+  if (context == null) return;
+
+  switch (type) {
+    case 'new_order':
+      final orderId = data?['orderId'] as String?;
+      if (orderId != null) {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: orderId),
+          ),
+        );
+      }
+      break;
+    case 'order_status':
+      final orderId = data?['orderId'] as String?;
+      if (orderId != null) {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: orderId),
+          ),
+        );
+      }
+      break;
+    case 'payment':
+      // Navigate to wallet screen
+      navigatorKey.currentState?.pushNamed('/wallet');
+      break;
+    default:
+      // Default to orders screen
+      navigatorKey.currentState?.pushNamed('/orders');
+  }
 }
 
 class FeedzoRestaurantApp extends StatelessWidget {
@@ -40,6 +86,7 @@ class FeedzoRestaurantApp extends StatelessWidget {
       ],
       child: ResponsiveBuilder(
         builder: (context, info) => MaterialApp(
+          navigatorKey: navigatorKey,
           title: 'Feedzo Restaurant',
           debugShowCheckedModeBanner: false,
           theme: appTheme(),
@@ -79,6 +126,7 @@ class _AuthGate extends StatelessWidget {
           final user = snap.data!;
           OneSignalService.loginUser(user.uid);
           OneSignalService.setRole('restaurant');
+          OneSignalService.setRestaurantId(user.uid);
 
           if (!auth.isLoggedIn) {
             WidgetsBinding.instance.addPostFrameCallback((_) {

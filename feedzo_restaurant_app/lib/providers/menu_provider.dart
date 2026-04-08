@@ -76,12 +76,99 @@ class MenuProvider extends ChangeNotifier {
   Future<void> deleteItem(String id) async {
     try {
       await FirebaseFirestore.instance
-          .collection('items') // Changed from 'menu_items'
+          .collection('items')
           .doc(id)
           .delete();
     } catch (e) {
       debugPrint('Error deleting menu item: $e');
     }
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // STOCK/INVENTORY MANAGEMENT
+  // ═════════════════════════════════════════════════════════════════════════════
+
+  /// Update stock quantity for a menu item
+  Future<void> updateStock(String id, int newStock) async {
+    try {
+      await FirebaseFirestore.instance.collection('items').doc(id).update({
+        'stockQuantity': newStock,
+        'isAvailable': newStock > 0, // Auto-disable if out of stock
+      });
+      debugPrint('Stock updated for item $id: $newStock');
+    } catch (e) {
+      debugPrint('Error updating stock: $e');
+      rethrow;
+    }
+  }
+
+  /// Decrement stock when order is placed
+  Future<bool> decrementStock(String id, int quantity) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('items').doc(id).get();
+      if (!doc.exists) return false;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final trackInventory = data['trackInventory'] ?? false;
+      final unlimitedStock = data['unlimitedStock'] ?? true;
+
+      if (!trackInventory || unlimitedStock) return true;
+
+      final currentStock = (data['stockQuantity'] ?? 0) as int;
+      final newStock = currentStock - quantity;
+
+      if (newStock < 0) {
+        debugPrint('Insufficient stock for item $id');
+        return false;
+      }
+
+      await FirebaseFirestore.instance.collection('items').doc(id).update({
+        'stockQuantity': newStock,
+        'isAvailable': newStock > 0,
+      });
+
+      debugPrint('Stock decremented for item $id: $currentStock -> $newStock');
+      return true;
+    } catch (e) {
+      debugPrint('Error decrementing stock: $e');
+      return false;
+    }
+  }
+
+  /// Enable/disable inventory tracking
+  Future<void> setInventoryTracking(String id, bool track, {int initialStock = 10}) async {
+    try {
+      await FirebaseFirestore.instance.collection('items').doc(id).update({
+        'trackInventory': track,
+        'stockQuantity': track ? initialStock : -1,
+        'unlimitedStock': !track,
+      });
+      debugPrint('Inventory tracking ${track ? 'enabled' : 'disabled'} for item $id');
+    } catch (e) {
+      debugPrint('Error setting inventory tracking: $e');
+      rethrow;
+    }
+  }
+
+  /// Get items with low stock
+  List<MenuItemModel> get lowStockItems {
+    return _items.where((item) => item.isLowStock).toList();
+  }
+
+  /// Get items out of stock
+  List<MenuItemModel> get outOfStockItems {
+    return _items.where((item) => item.isOutOfStock).toList();
+  }
+
+  /// Get inventory summary
+  Map<String, int> get inventorySummary {
+    return {
+      'total': _items.length,
+      'tracking': _items.where((i) => i.trackInventory).length,
+      'lowStock': lowStockItems.length,
+      'outOfStock': outOfStockItems.length,
+      'unlimited': _items.where((i) => i.unlimitedStock).length,
+    };
   }
 
   @override

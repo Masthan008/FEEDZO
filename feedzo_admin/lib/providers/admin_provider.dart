@@ -9,9 +9,10 @@ class AdminProvider extends ChangeNotifier {
   bool isLoggedIn = false;
   String adminEmail = '';
   String adminName = '';
+  String adminUid = '';
 
   void login(String email) { isLoggedIn = true; adminEmail = email; initStreams(); notifyListeners(); }
-  void logout() { isLoggedIn = false; adminEmail = ''; adminName = ''; disposeStreams(); notifyListeners(); }
+  void logout() { isLoggedIn = false; adminEmail = ''; adminName = ''; adminUid = ''; disposeStreams(); notifyListeners(); }
 
   Future<void> logoutFirebase() async {
     await FirebaseAuth.instance.signOut();
@@ -26,6 +27,7 @@ class AdminProvider extends ChangeNotifier {
   /// Fetches the real name from Firestore.
   Future<void> loginWithFirebase(String uid, String email) async {
     isLoggedIn = true;
+    adminUid = uid;
     adminEmail = email;
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
@@ -249,9 +251,15 @@ class AdminProvider extends ChangeNotifier {
   }
 
   Future<void> recordCashSubmission(String driverId, double amount, String note) async {
-    await AdminFirestoreService.markCashReceived(driverId, amount);
-
     final driver = drivers.firstWhere((d) => d.id == driverId, orElse: () => drivers.first);
+    
+    await AdminFirestoreService.markCashReceived(
+      driverId, 
+      amount, 
+      driver.name,
+      adminUid.isNotEmpty ? adminUid : 'system',
+    );
+
     final idx = driverSummaries.indexWhere((s) => s.driverId == driverId);
     final isFullySettled = idx >= 0 ? driverSummaries[idx].pendingAmount <= amount : false;
     final history = settlementHistory[driverId] ?? [];

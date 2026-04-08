@@ -92,16 +92,48 @@ class AdminFirestoreService {
 
   // ── COD settlement ────────────────────────────────────────────────────────
   static Future<void> markCashReceived(
-      String driverId, double amount) =>
-      _db.runTransaction((tx) async {
-        final ref = settlements.doc(driverId);
-        final snap = await tx.get(ref);
-        if (!snap.exists) return;
-        final d = snap.data() as Map;
-        final pending = ((d['pending'] ?? 0) as num).toDouble();
-        tx.update(ref, {
-          'submitted': FieldValue.increment(amount),
-          'pending': (pending - amount).clamp(0, double.infinity),
-        });
+    String driverId, 
+    double amount,
+    String driverName,
+    String adminId,
+  ) async {
+    // Run transaction to update settlement
+    await _db.runTransaction((tx) async {
+      final ref = settlements.doc(driverId);
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final d = snap.data() as Map;
+      final pending = ((d['pending'] ?? 0) as num).toDouble();
+      final submitted = ((d['submitted'] ?? 0) as num).toDouble();
+      
+      tx.update(ref, {
+        'submitted': submitted + amount,
+        'pending': (pending - amount).clamp(0, double.infinity),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
+    });
+    
+    // Create submission record for audit trail
+    await _db.collection('driverSubmissions').add({
+      'driverId': driverId,
+      'driverName': driverName,
+      'amount': amount,
+      'status': 'verified',
+      'submittedAt': FieldValue.serverTimestamp(),
+      'verifiedAt': FieldValue.serverTimestamp(),
+      'verifiedBy': adminId,
+      'notes': 'Marked as received by admin',
+    });
+    
+    // Add to activity feed
+    await _db.collection('activities').add({
+      'type': 'cash_submission',
+      'title': 'Cash Received from Driver',
+      'description': '₹${amount.toStringAsFixed(0)} received from $driverName',
+      'amount': amount,
+      'driverId': driverId,
+      'driverName': driverName,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
