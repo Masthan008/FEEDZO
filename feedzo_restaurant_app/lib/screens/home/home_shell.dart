@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/wallet_provider.dart';
+import '../../providers/hike_charges_provider.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../orders/orders_screen.dart';
 import '../menu/menu_screen.dart';
@@ -48,6 +49,7 @@ class _HomeShellState extends State<HomeShell>
         context.read<OrderProvider>().init(user.uid);
         context.read<MenuProvider>().init(user.uid);
         context.read<WalletProvider>().init(user.uid);
+        context.read<HikeChargesProvider>().init(user.uid);
       }
     });
   }

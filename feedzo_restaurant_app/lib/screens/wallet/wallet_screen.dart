@@ -19,6 +19,11 @@ class WalletScreen extends StatelessWidget {
         title: const Text('Wallet'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.price_change_outlined),
+            tooltip: 'Hike Charges',
+            onPressed: () => Navigator.pushNamed(context, '/hike-charges'),
+          ),
+          IconButton(
             icon: const Icon(Icons.account_balance_outlined),
             onPressed: () => _showBankDialog(context, wallet),
           ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/theme.dart';
+import 'dart:html' as html;
 import '../../services/restaurant_admin_service.dart';
 import '../../services/hike_charges_service.dart';
 import '../../services/monthly_report_service.dart';
@@ -562,7 +564,11 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () {},
+                                onPressed: () {
+                                  if (generatedUrl != null && kIsWeb) {
+                                    html.window.open(generatedUrl!, '_blank');
+                                  }
+                                },
                                 icon: const Icon(Icons.open_in_new),
                                 label: const Text('View Report'),
                               ),
@@ -598,7 +604,15 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                             leading: const Icon(Icons.picture_as_pdf, color: AppColors.primary),
                             title: Text(DateFormat('MMMM yyyy').format(month)),
                             subtitle: Text('Orders: ${report['totalOrders'] ?? 0} | Value: ₹${(report['totalOrderValue'] as num?)?.toStringAsFixed(0) ?? '0'}', style: const TextStyle(fontSize: 12)),
-                            trailing: IconButton(icon: const Icon(Icons.download, size: 18), onPressed: () {}),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.download, size: 18),
+                              onPressed: () {
+                                final url = report['fileUrl'] as String?;
+                                if (url != null && kIsWeb) {
+                                  html.window.open(url, '_blank');
+                                }
+                              },
+                            ),
                           );
                         },
                       );

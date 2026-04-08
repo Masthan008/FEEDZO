@@ -17,6 +17,7 @@ import 'screens/home/home_shell.dart';
 
 import 'services/onesignal_service.dart';
 import 'screens/orders/order_detail_screen.dart';
+import 'screens/hike_charges_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -91,6 +92,9 @@ class FeedzoRestaurantApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: appTheme(),
           home: const _AuthGate(),
+          routes: {
+            '/hike-charges': (context) => const HikeChargesScreen(),
+          },
           builder: (context, child) {
             // Ensure text scaling doesn't break layout
             return MediaQuery(
