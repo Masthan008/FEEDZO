@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
 import 'core/theme.dart';
+import 'core/responsive.dart';
 import 'providers/admin_provider.dart';
 import 'shell.dart';
 import 'screens/auth/login_screen.dart';
@@ -27,11 +28,22 @@ class FeedzoAdminApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AdminProvider(),
-      child: MaterialApp(
-        title: 'Feedzo Admin',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        home: const _AuthGate(),
+      child: ResponsiveBuilder(
+        builder: (context, info) => MaterialApp(
+          title: 'Feedzo Admin',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          home: const _AuthGate(),
+          builder: (context, child) {
+            // Ensure text scaling doesn't break layout
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
+              ),
+              child: child!,
+            );
+          },
+        ),
       ),
     );
   }

@@ -8,8 +8,9 @@ class TopBar extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onBack;
+  final List<Widget>? actions;
 
-  const TopBar({super.key, required this.title, this.subtitle, this.onBack});
+  const TopBar({super.key, required this.title, this.subtitle, this.onBack, this.actions});
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +42,10 @@ class TopBar extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          if (actions != null) ...[
+            ...actions!,
+            const SizedBox(width: 16),
+          ],
           Container(
             width: 220, height: 36,
             decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),

@@ -139,8 +139,11 @@ class Driver {
 class AdminRestaurant {
   final String id;
   final String name;
+  final String email;
+  final String phone;
   final String cuisine;
   final String location;
+  final String? address;
   final double rating;
   RestaurantStatus status;
   final int totalOrders;
@@ -148,33 +151,80 @@ class AdminRestaurant {
   double walletBalance;
   double commissionRate;
   final List<Transaction> transactions;
+  
+  // New fields
+  bool isOpen;
+  bool isApproved;
+  String? rejectionReason;
+  DateTime? approvedAt;
+  String? approvedBy;
+  DateTime? createdAt;
+  String? imageUrl;
+  String? fssaiNumber;
+  String? gstNumber;
+  String? panNumber;
+  Map<String, dynamic>? documents;
+  Map<String, dynamic>? autoOpenClose;
 
   AdminRestaurant({
-    required this.id, required this.name, required this.cuisine, required this.location,
+    required this.id, required this.name, required this.email, required this.phone,
+    required this.cuisine, required this.location, this.address,
     required this.rating, required this.status, required this.totalOrders,
     required this.totalRevenue, required this.walletBalance,
     this.commissionRate = 0.10,
     required this.transactions,
+    this.isOpen = false,
+    this.isApproved = false,
+    this.rejectionReason,
+    this.approvedAt,
+    this.approvedBy,
+    this.createdAt,
+    this.imageUrl,
+    this.fssaiNumber,
+    this.gstNumber,
+    this.panNumber,
+    this.documents,
+    this.autoOpenClose,
   });
 
   factory AdminRestaurant.fromMap(String id, Map<String, dynamic> map) {
     return AdminRestaurant(
       id: id,
       name: map['name'] as String? ?? 'Unknown Restaurant',
+      email: map['email'] as String? ?? '',
+      phone: map['phone'] as String? ?? '',
       cuisine: map['cuisine'] as String? ?? '',
       location: map['location'] as String? ?? map['address'] as String? ?? '',
+      address: map['address'] as String?,
       rating: ((map['rating'] ?? 5.0) as num).toDouble(),
       status: RestaurantStatus.values.firstWhere((e) => e.name == (map['status'] ?? 'pendingApproval'), orElse: () => RestaurantStatus.pendingApproval),
       totalOrders: (map['totalOrders'] as num?)?.toInt() ?? 0,
       totalRevenue: ((map['totalRevenue'] ?? 0) as num).toDouble(),
       walletBalance: ((map['wallet'] ?? map['walletBalance'] ?? 0) as num).toDouble(),
       commissionRate: ((map['commission'] ?? map['commissionRate'] ?? 0.10) as num).toDouble(),
-      transactions: [], 
+      transactions: [],
+      isOpen: map['isOpen'] as bool? ?? false,
+      isApproved: map['isApproved'] as bool? ?? false,
+      rejectionReason: map['rejectionReason'] as String?,
+      approvedAt: (map['approvedAt'] as Timestamp?)?.toDate(),
+      approvedBy: map['approvedBy'] as String?,
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      imageUrl: map['imageUrl'] as String?,
+      fssaiNumber: map['fssaiNumber'] as String?,
+      gstNumber: map['gstNumber'] as String?,
+      panNumber: map['panNumber'] as String?,
+      documents: map['documents'] as Map<String, dynamic>?,
+      autoOpenClose: map['autoOpenClose'] as Map<String, dynamic>?,
     );
   }
 
   double get commissionEarned => totalRevenue * commissionRate;
   double get restaurantEarnings => totalRevenue - commissionEarned;
+  
+  String get displayStatus {
+    if (!isApproved) return 'Pending Approval';
+    return isOpen ? 'Open' : 'Closed';
+  }
 }
 
 class AppUser {

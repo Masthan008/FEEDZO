@@ -2,23 +2,108 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../core/theme.dart';
 import '../widgets/topbar.dart';
+import '../services/restaurant_admin_service.dart';
+import 'restaurants/restaurant_detail_screen.dart';
+import 'restaurants/restaurant_form_dialog.dart';
 
-class RestaurantsScreen extends StatelessWidget {
+class RestaurantsScreen extends StatefulWidget {
   const RestaurantsScreen({super.key});
+
+  @override
+  State<RestaurantsScreen> createState() => _RestaurantsScreenState();
+}
+
+class _RestaurantsScreenState extends State<RestaurantsScreen> {
+  final RestaurantAdminService _service = RestaurantAdminService();
+  String _searchQuery = '';
+  String _filterStatus = 'all'; // all, open, closed, pending
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showAddRestaurantDialog() async {
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      builder: (context) => const RestaurantFormDialog(),
+    );
+
+    if (result != null) {
+      final id = await _service.createRestaurant(
+        name: result['name'],
+        email: result['email'],
+        phone: result['phone'],
+        cuisine: result['cuisine'],
+        address: result['address'],
+        password: result['password'],
+        commissionRate: result['commissionRate'] ?? 10.0,
+        fssaiNumber: result['fssaiNumber'],
+        gstNumber: result['gstNumber'],
+        panNumber: result['panNumber'],
+        isApproved: result['isApproved'] ?? true,
+      );
+
+      if (id != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Restaurant created successfully'),
+            backgroundColor: AppColors.statusDelivered,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const TopBar(title: 'Restaurants', subtitle: 'Manage all partner restaurants'),
+        TopBar(
+          title: 'Restaurants',
+          subtitle: 'Manage all partner restaurants',
+          actions: [
+            ElevatedButton.icon(
+              onPressed: _showAddRestaurantDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Restaurant'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 24),
+          ],
+        ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('restaurants').snapshots(),
+            stream: FirebaseFirestore.instance.collection('restaurants').orderBy('createdAt', descending: true).snapshots(),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
               final docs = snap.data?.docs ?? [];
+              
+              // Filter logic
+              var filtered = docs.where((d) {
+                final data = d.data() as Map<String, dynamic>;
+                final matchesSearch = _searchQuery.isEmpty ||
+                    (data['name']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+                    (data['email']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+                
+                final isApproved = data['isApproved'] as bool? ?? false;
+                final isOpen = data['isOpen'] as bool? ?? false;
+                
+                bool matchesStatus = _filterStatus == 'all';
+                if (_filterStatus == 'pending') matchesStatus = !isApproved;
+                if (_filterStatus == 'open') matchesStatus = isApproved && isOpen;
+                if (_filterStatus == 'closed') matchesStatus = isApproved && !isOpen;
+                
+                return matchesSearch && matchesStatus;
+              }).toList();
+              
               final pending = docs.where((d) {
                 final data = d.data() as Map<String, dynamic>;
                 return data['isApproved'] == false;
@@ -27,17 +112,79 @@ class RestaurantsScreen extends StatelessWidget {
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Search and Filter Row
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: _searchCtrl,
+                            onChanged: (v) => setState(() => _searchQuery = v),
+                            decoration: InputDecoration(
+                              hintText: 'Search restaurants...',
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _searchCtrl.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: AppColors.surface,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Filter Dropdown
+                        DropdownButton<String>(
+                          value: _filterStatus,
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('All Status')),
+                            DropdownMenuItem(value: 'open', child: Text('Open')),
+                            DropdownMenuItem(value: 'closed', child: Text('Closed')),
+                            DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                          ],
+                          onChanged: (v) => setState(() => _filterStatus = v!),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Stats Row
+                    _buildStatsRow(docs),
+                    const SizedBox(height: 16),
+                    
+                    // Pending Banner
                     if (pending.isNotEmpty) _PendingBanner(docs: pending),
                     if (pending.isNotEmpty) const SizedBox(height: 16),
-                    if (docs.isEmpty)
+                    
+                    // Results count
+                    Text(
+                      '${filtered.length} restaurants found',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    if (filtered.isEmpty)
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.all(48),
                           child: Column(children: [
                             const Icon(Icons.store_outlined, size: 48, color: AppColors.textHint),
                             const SizedBox(height: 12),
-                            const Text('No restaurants registered yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 15)),
+                            Text(
+                              'No restaurants found',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+                            ),
                           ]),
                         ),
                       )
@@ -50,7 +197,7 @@ class RestaurantsScreen extends StatelessWidget {
                         ),
                         child: Column(children: [
                           _TableHeader(),
-                          ...docs.map((doc) => _RestaurantRow(doc: doc)),
+                          ...filtered.map((doc) => _RestaurantRow(doc: doc)),
                         ]),
                       ),
                   ],
@@ -60,6 +207,65 @@ class RestaurantsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatsRow(List<QueryDocumentSnapshot> docs) {
+    final total = docs.length;
+    final open = docs.where((d) {
+      final data = d.data() as Map<String, dynamic>;
+      return data['isApproved'] == true && data['isOpen'] == true;
+    }).length;
+    final closed = docs.where((d) {
+      final data = d.data() as Map<String, dynamic>;
+      return data['isApproved'] == true && data['isOpen'] == false;
+    }).length;
+    final pending = docs.where((d) {
+      final data = d.data() as Map<String, dynamic>;
+      return data['isApproved'] == false;
+    }).length;
+
+    return Row(
+      children: [
+        _buildStatChip('Total', total.toString(), AppColors.textPrimary),
+        const SizedBox(width: 12),
+        _buildStatChip('Open', open.toString(), AppColors.statusDelivered),
+        const SizedBox(width: 12),
+        _buildStatChip('Closed', closed.toString(), AppColors.textSecondary),
+        const SizedBox(width: 12),
+        _buildStatChip('Pending', pending.toString(), AppColors.warning),
+      ],
+    );
+  }
+
+  Widget _buildStatChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(50)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color.withAlpha(180),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -179,9 +385,20 @@ class _RestaurantRowState extends State<_RestaurantRow> {
 
   Future<void> _toggleStatus(bool isApproved) async {
     final batch = FirebaseFirestore.instance.batch();
-    batch.update(FirebaseFirestore.instance.collection('restaurants').doc(widget.doc.id), {'isApproved': !isApproved});
+    batch.update(FirebaseFirestore.instance.collection('restaurants').doc(widget.doc.id), {
+      'isApproved': !isApproved,
+      'isOpen': !isApproved,
+      'status': !isApproved ? 'active' : 'pendingApproval',
+    });
     batch.update(FirebaseFirestore.instance.collection('users').doc(widget.doc.id), {'status': !isApproved ? 'approved' : 'rejected'});
     await batch.commit();
+  }
+
+  Future<void> _toggleOpenClose(bool isOpen) async {
+    await FirebaseFirestore.instance.collection('restaurants').doc(widget.doc.id).update({
+      'isOpen': !isOpen,
+      'status': !isOpen ? 'active' : 'disabled',
+    });
   }
 
   Future<void> _releasePayout(double wallet) async {
@@ -203,36 +420,95 @@ class _RestaurantRowState extends State<_RestaurantRow> {
     final name = d['name'] as String? ?? 'Unknown';
     final email = d['email'] as String? ?? '';
     final isApproved = d['isApproved'] as bool? ?? false;
+    final isOpen = d['isOpen'] as bool? ?? false;
     final commission = ((d['commission'] as num?) ?? 10).toDouble();
     final wallet = ((d['wallet'] as num?) ?? 0).toDouble();
+
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+    
+    if (!isApproved) {
+      statusColor = AppColors.warning;
+      statusText = 'Pending';
+      statusIcon = Icons.pending;
+    } else if (isOpen) {
+      statusColor = AppColors.statusDelivered;
+      statusText = 'Open';
+      statusIcon = Icons.check_circle;
+    } else {
+      statusColor = AppColors.textSecondary;
+      statusText = 'Closed';
+      statusIcon = Icons.cancel;
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
       child: Row(children: [
-        Expanded(flex: 4, child: Row(children: [
-          Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(10)),
-            child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 15))),
+        // Restaurant Info
+        Expanded(flex: 4, child: GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RestaurantDetailScreen(restaurantId: widget.doc.id),
+            ),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14), overflow: TextOverflow.ellipsis),
-            Text(email, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis),
-          ])),
-        ])),
-        Expanded(flex: 2, child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isApproved ? AppColors.statusDeliveredBg : AppColors.statusPendingBg,
-            borderRadius: BorderRadius.circular(20),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Row(children: [
+              Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(10)),
+                child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 15))),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14), overflow: TextOverflow.ellipsis),
+                Text(email, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis),
+              ])),
+            ]),
           ),
-          child: Text(isApproved ? 'Active' : 'Pending',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                  color: isApproved ? AppColors.statusDelivered : AppColors.statusPending)),
         )),
+        
+        // Status with Toggle
+        Expanded(flex: 2, child: isApproved
+          ? Row(
+              children: [
+                Switch(
+                  value: isOpen,
+                  onChanged: (_) => _toggleOpenClose(isOpen),
+                  activeColor: AppColors.statusDelivered,
+                ),
+                Text(
+                  isOpen ? 'Open' : 'Closed',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ],
+            )
+          : Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withAlpha(30),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, size: 14, color: statusColor),
+                  const SizedBox(width: 4),
+                  Text(statusText,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: statusColor)),
+                ],
+              ),
+            )),
+        
+        // Commission
         Expanded(flex: 2, child: _editingCommission
           ? Row(children: [
               SizedBox(width: 52, child: TextField(controller: _commCtrl, keyboardType: TextInputType.number, style: const TextStyle(fontSize: 12), decoration: const InputDecoration(suffixText: '%', isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6)))),
@@ -251,20 +527,34 @@ class _RestaurantRowState extends State<_RestaurantRow> {
                 const Icon(Icons.edit_rounded, size: 12, color: AppColors.textHint),
               ]),
             )),
+        
+        // Wallet
         Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Rs.${wallet.toStringAsFixed(0)}',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                   color: wallet > 0 ? AppColors.primary : AppColors.textHint)),
           const Text('Wallet', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
         ])),
+        
+        // Actions
         Expanded(flex: 3, child: Wrap(spacing: 6, runSpacing: 4, children: [
+          _Btn(
+            label: 'View',
+            color: AppColors.info,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RestaurantDetailScreen(restaurantId: widget.doc.id),
+              ),
+            ),
+          ),
           _Btn(
             label: isApproved ? 'Disable' : 'Approve',
             color: isApproved ? AppColors.error : AppColors.primary,
             onTap: () => _toggleStatus(isApproved),
           ),
           if (wallet > 0)
-            _Btn(label: 'Release Rs.${wallet.toStringAsFixed(0)}', color: AppColors.info, onTap: () => _releasePayout(wallet)),
+            _Btn(label: 'Release', color: AppColors.statusDelivered, onTap: () => _releasePayout(wallet)),
         ])),
       ]),
     );

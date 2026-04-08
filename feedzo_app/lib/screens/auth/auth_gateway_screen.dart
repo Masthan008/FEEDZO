@@ -18,30 +18,8 @@ class AuthGatewayScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image - Replace with actual image
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/auth_background.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            // Fallback gradient when image not available
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withAlpha(100),
-                    Colors.black.withAlpha(180),
-                    Colors.black.withAlpha(220),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-          ),
+          // Background with fallback gradient
+          _AuthBackground(),
 
           // Content
           SafeArea(
@@ -304,6 +282,37 @@ class AuthGatewayScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AuthBackground extends StatelessWidget {
+  const _AuthBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/auth_background.png',
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (context, error, stackTrace) {
+        // Beautiful gradient fallback when image not available
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF16A34A),  // Primary green
+                Color(0xFF059669),  // Darker green
+                Color(0xFF047857),  // Even darker
+                Color(0xFF065F46),  // Darkest
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

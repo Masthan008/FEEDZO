@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'firebase_options.dart';
 import 'core/theme.dart';
+import 'core/responsive.dart';
 import 'providers/auth_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/menu_provider.dart';
@@ -37,11 +38,22 @@ class FeedzoRestaurantApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => HikeChargesProvider()),
       ],
-      child: MaterialApp(
-        title: 'Feedzo Restaurant',
-        debugShowCheckedModeBanner: false,
-        theme: appTheme(),
-        home: const _AuthGate(),
+      child: ResponsiveBuilder(
+        builder: (context, info) => MaterialApp(
+          title: 'Feedzo Restaurant',
+          debugShowCheckedModeBanner: false,
+          theme: appTheme(),
+          home: const _AuthGate(),
+          builder: (context, child) {
+            // Ensure text scaling doesn't break layout
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
+              ),
+              child: child!,
+            );
+          },
+        ),
       ),
     );
   }

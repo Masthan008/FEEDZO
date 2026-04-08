@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 
-class WaitingApprovalScreen extends StatelessWidget {
-  const WaitingApprovalScreen({super.key});
+class PendingApprovalScreen extends StatelessWidget {
+  const PendingApprovalScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final isRejected = auth.rejectionReason != null && !auth.isApproved;
+    final isRejected = auth.rejectionReason != null;
     
     return Scaffold(
       body: Container(
@@ -19,9 +18,7 @@ class WaitingApprovalScreen extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              isRejected 
-                  ? AppColors.error.withValues(alpha: 0.1)
-                  : AppColors.warning.withValues(alpha: 0.1),
+              AppColors.primary.withValues(alpha: 0.1),
               Colors.white,
             ],
           ),
@@ -179,32 +176,13 @@ class WaitingApprovalScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Action Buttons
+                  // Logout Button
                   SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user != null) {
-                          context.read<AuthProvider>().syncFromFirebase(user);
-                        }
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Refresh Status'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
+                    width: 200,
                     child: OutlinedButton.icon(
-                      onPressed: () => context.read<AuthProvider>().logout(),
+                      onPressed: () => auth.logout(),
                       icon: const Icon(Icons.logout),
-                      label: const Text('Sign Out'),
+                      label: const Text('Logout'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(color: AppColors.primary),

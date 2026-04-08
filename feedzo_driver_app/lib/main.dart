@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'core/responsive.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'widgets/approval_gate.dart';
@@ -23,11 +24,22 @@ class FeedzoDriverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Feedzo Driver',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const _AuthGate(),
+    return ResponsiveBuilder(
+      builder: (context, info) => MaterialApp(
+        title: 'Feedzo Driver',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: const _AuthGate(),
+        builder: (context, child) {
+          // Ensure text scaling doesn't break layout
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
+            ),
+            child: child!,
+          );
+        },
+      ),
     );
   }
 }

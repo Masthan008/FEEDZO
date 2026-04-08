@@ -154,6 +154,13 @@ class DashboardScreen extends StatelessWidget {
                         value: '₹${(orders.totalRevenue / 1000).toStringAsFixed(1)}K',
                         icon: Icons.trending_up_rounded,
                       ),
+                      const SizedBox(width: 12),
+                      _QuickStat(
+                        label: 'Commission',
+                        value: '${auth.commissionRate.toInt()}%',
+                        icon: Icons.percent_rounded,
+                        color: AppColors.info,
+                      ),
                     ],
                   ),
                 ],
@@ -489,15 +496,18 @@ class _QuickStat extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+  final Color? color;
 
   const _QuickStat({
     required this.label,
     required this.value,
     required this.icon,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = color ?? Colors.white;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -511,21 +521,21 @@ class _QuickStat extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: iconColor, size: 20),
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: iconColor,
               ),
             ),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: (color ?? Colors.white).withValues(alpha: 0.7),
               ),
             ),
           ],

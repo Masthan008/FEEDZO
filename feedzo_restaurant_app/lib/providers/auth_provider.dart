@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,15 +25,29 @@ class AuthProvider extends ChangeNotifier {
   bool _isVeg = false;
   String _address = '';
 
+  // Admin sync fields
   bool _isRestaurantOpen = true;
+  bool _isApproved = false;
+  String? _rejectionReason;
+  double _commissionRate = 10.0;
+  Map<String, dynamic>? _documents;
+  Map<String, dynamic>? _autoOpenClose;
+  
+  // Firestore listeners
+  StreamSubscription<DocumentSnapshot>? _restaurantListener;
+  StreamSubscription<DocumentSnapshot>? _userListener;
 
   bool get isLoggedIn => _isLoggedIn;
   bool get isLoading => _isLoading;
   String get userName => _userName;
   String get restaurantName => _restaurantName;
   String get status => _status;
-  bool get isApproved => _status == 'approved';
+  bool get isApproved => _isApproved;
   bool get isRestaurantOpen => _isRestaurantOpen;
+  String? get rejectionReason => _rejectionReason;
+  double get commissionRate => _commissionRate;
+  Map<String, dynamic>? get documents => _documents;
+  Map<String, dynamic>? get autoOpenClose => _autoOpenClose;
   String get description => _description;
   String get coverImageUrl => _coverImageUrl;
   List<String> get restaurantImages => _restaurantImages;
@@ -145,6 +160,11 @@ class AuthProvider extends ChangeNotifier {
       final rData = rDoc.data();
       _restaurantName = rData?['name'] as String? ?? 'My Restaurant';
       _isRestaurantOpen = rData?['isOpen'] as bool? ?? true;
+      _isApproved = rData?['isApproved'] as bool? ?? false;
+      _rejectionReason = rData?['rejectionReason'] as String?;
+      _commissionRate = (rData?['commission'] ?? 10.0).toDouble();
+      _documents = rData?['documents'] as Map<String, dynamic>?;
+      _autoOpenClose = rData?['autoOpenClose'] as Map<String, dynamic>?;
       _description = rData?['description'] as String? ?? '';
       _coverImageUrl = rData?['coverImageUrl'] as String? ?? '';
       _restaurantImages = List<String>.from(rData?['imageUrls'] ?? []);
@@ -160,6 +180,9 @@ class AuthProvider extends ChangeNotifier {
       _address = rData?['address'] as String? ?? '';
 
       _isLoggedIn = true;
+      
+      // Start real-time listeners
+      _startFirestoreListeners(cred.user!.uid);
     } on FirebaseAuthException catch (e) {
       _isLoggedIn = false;
       _errorMessage = _friendlyError(e.code);
@@ -239,11 +262,109 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Cancel listeners
+    await _restaurantListener?.cancel();
+    await _userListener?.cancel();
+    _restaurantListener = null;
+    _userListener = null;
+    
     await FirebaseAuth.instance.signOut();
     _isLoggedIn = false;
     _userName = '';
     _restaurantName = '';
     notifyListeners();
+  }
+  
+  // Real-time Firestore listeners for admin sync
+  void _startFirestoreListeners(String uid) {
+    // Listen to restaurant document changes
+    _restaurantListener = FirebaseFirestore.instance
+        .collection('restaurants')
+        .doc(uid)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+      
+      final data = snapshot.data();
+      if (data == null) return;
+      
+      bool hasChanges = false;
+      
+      // Sync isOpen status from admin
+      final newIsOpen = data['isOpen'] as bool? ?? true;
+      if (newIsOpen != _isRestaurantOpen) {
+        _isRestaurantOpen = newIsOpen;
+        hasChanges = true;
+      }
+      
+      // Sync approval status
+      final newIsApproved = data['isApproved'] as bool? ?? false;
+      if (newIsApproved != _isApproved) {
+        _isApproved = newIsApproved;
+        hasChanges = true;
+      }
+      
+      // Sync rejection reason
+      final newRejectionReason = data['rejectionReason'] as String?;
+      if (newRejectionReason != _rejectionReason) {
+        _rejectionReason = newRejectionReason;
+        hasChanges = true;
+      }
+      
+      // Sync commission rate
+      final newCommission = (data['commission'] ?? 10.0).toDouble();
+      if (newCommission != _commissionRate) {
+        _commissionRate = newCommission;
+        hasChanges = true;
+      }
+      
+      // Sync documents
+      final newDocuments = data['documents'] as Map<String, dynamic>?;
+      if (newDocuments?.toString() != _documents?.toString()) {
+        _documents = newDocuments;
+        hasChanges = true;
+      }
+      
+      // Sync auto open/close
+      final newAutoOpenClose = data['autoOpenClose'] as Map<String, dynamic>?;
+      if (newAutoOpenClose?.toString() != _autoOpenClose?.toString()) {
+        _autoOpenClose = newAutoOpenClose;
+        hasChanges = true;
+      }
+      
+      if (hasChanges) {
+        notifyListeners();
+      }
+    }, onError: (e) {
+      debugPrint('Error in restaurant listener: $e');
+    });
+    
+    // Listen to user document for status changes
+    _userListener = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+      
+      final data = snapshot.data();
+      if (data == null) return;
+      
+      final newStatus = data['status'] as String? ?? 'pending';
+      if (newStatus != _status) {
+        _status = newStatus;
+        notifyListeners();
+      }
+    }, onError: (e) {
+      debugPrint('Error in user listener: $e');
+    });
+  }
+  
+  @override
+  void dispose() {
+    _restaurantListener?.cancel();
+    _userListener?.cancel();
+    super.dispose();
   }
 
   Future<void> syncFromFirebase(dynamic user) async {
@@ -272,6 +393,11 @@ class AuthProvider extends ChangeNotifier {
       final rData = rDoc.data();
       _restaurantName = rData?['name'] as String? ?? '';
       _isRestaurantOpen = rData?['isOpen'] as bool? ?? true;
+      _isApproved = rData?['isApproved'] as bool? ?? false;
+      _rejectionReason = rData?['rejectionReason'] as String?;
+      _commissionRate = (rData?['commission'] ?? 10.0).toDouble();
+      _documents = rData?['documents'] as Map<String, dynamic>?;
+      _autoOpenClose = rData?['autoOpenClose'] as Map<String, dynamic>?;
       _description = rData?['description'] as String? ?? '';
       _coverImageUrl = rData?['coverImageUrl'] as String? ?? '';
       _restaurantImages = List<String>.from(rData?['imageUrls'] ?? []);
@@ -287,6 +413,9 @@ class AuthProvider extends ChangeNotifier {
       _address = rData?['address'] as String? ?? '';
 
       _isLoggedIn = true;
+      
+      // Start real-time listeners
+      _startFirestoreListeners(user.uid);
     } catch (e) {
       debugPrint('Sync Error: $e');
     } finally {

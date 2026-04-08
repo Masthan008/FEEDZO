@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'core/responsive.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
@@ -47,29 +48,40 @@ class FeedzoApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
-        builder: (_, themeProvider, __) => MaterialApp(
-        title: 'Feedzo',
-        debugShowCheckedModeBanner: false,
-        navigatorKey: navigatorKey,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: themeProvider.mode,
-        routes: {
-          '/cart': (_) => const CartScreen(),
-          '/dashboard': (_) => const DashboardScreen(),
-        },
-        onGenerateRoute: (settings) {
-          // Deep link route for order tracking
-          if (settings.name?.startsWith('/order/') ?? false) {
-            final orderId = settings.name!.replaceFirst('/order/', '');
-            return MaterialPageRoute(
-              builder: (_) => OrderTrackingScreen(orderId: orderId),
-            );
-          }
-          return null;
-        },
-        home: const _AuthGate(),
-      ),
+        builder: (_, themeProvider, __) => ResponsiveBuilder(
+          builder: (context, info) => MaterialApp(
+            title: 'Feedzo',
+            debugShowCheckedModeBanner: false,
+            navigatorKey: navigatorKey,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeProvider.mode,
+            routes: {
+              '/cart': (_) => const CartScreen(),
+              '/dashboard': (_) => const DashboardScreen(),
+            },
+            onGenerateRoute: (settings) {
+              // Deep link route for order tracking
+              if (settings.name?.startsWith('/order/') ?? false) {
+                final orderId = settings.name!.replaceFirst('/order/', '');
+                return MaterialPageRoute(
+                  builder: (_) => OrderTrackingScreen(orderId: orderId),
+                );
+              }
+              return null;
+            },
+            home: const _AuthGate(),
+            builder: (context, child) {
+              // Ensure text scaling doesn't break layout
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
+                ),
+                child: child!,
+              );
+            },
+          ),
+        ),
       ),
     );
   }

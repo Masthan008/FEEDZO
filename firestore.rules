@@ -657,5 +657,78 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow delete: if isAuth() && isAdmin();
   }
 
+  // ═══════════════════════════════════════════════════
+  // RESTAURANT MANAGEMENT — Admin & Restaurant Permissions
+  // ═══════════════════════════════════════════════════
+
+  // ── RESTAURANTS ──────────────────────────────────────
+  // Admin has full control; restaurants can update their own open/close status
+  match /restaurants/{restaurantId} {
+    allow read: if isAuth();
+    allow create: if isAuth() && isAdmin();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      // Restaurant can only toggle open/close and update autoOpenClose settings
+      (isRestaurant() && resource.data.id == uid() &&
+       request.resource.data.diff(resource.data).changedKeys()
+       .hasOnly(['isOpen', 'status', 'autoOpenClose', 'updatedAt']))
+    );
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── MENU ITEMS (Subcollection) ─────────────────────
+  // Admin or restaurant owner can CRUD menu items
+  match /restaurants/{restaurantId}/menu/{itemId} {
+    allow read: if isAuth();
+    allow create: if isAuth() && (isAdmin() || restaurantId == uid());
+    allow update: if isAuth() && (
+      isAdmin() ||
+      (restaurantId == uid() &&
+       request.resource.data.diff(resource.data).changedKeys()
+       .hasOnly(['name', 'description', 'price', 'discount', 'isAvailable', 
+                 'isVeg', 'category', 'isBestseller', 'imageUrl', 'updatedAt']))
+    );
+    allow delete: if isAuth() && (isAdmin() || restaurantId == uid());
+  }
+
+  // ── RESTAURANT DOCUMENTS (Subcollection) ──────────────
+  // Admin manages verification documents
+  match /restaurants/{restaurantId}/documents/{docId} {
+    allow read: if isAuth() && (isAdmin() || restaurantId == uid());
+    allow create: if isAuth() && (isAdmin() || restaurantId == uid());
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── RESTAURANT PAYOUT REQUESTS ─────────────────────
+  // Restaurant creates payout requests; admin approves/completes
+  match /restaurantPayoutRequests/{requestId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.restaurantId == uid()
+    );
+    allow create: if isAuth() && isRestaurant();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // COMMISSION & PRICING ADMIN — Platform Controls
+  // ═══════════════════════════════════════════════════
+
+  // ── COMMISSION SETTINGS ──────────────────────────────
+  // Admin manages commission rates per restaurant
+  match /commissionSettings/{restaurantId} {
+    allow read: if isAuth() && (isAdmin() || restaurantId == uid());
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── PLATFORM SETTINGS ───────────────────────────────
+  // Global platform configuration (only admin)
+  match /platformSettings/{settingId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
   }
 }

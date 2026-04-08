@@ -66,5 +66,5 @@ flutter:
   generate: true
   assets:
     - assets/logo.png
-    # - assets/images/auth_background.png  # TODO: Add this image file
+    - assets/images/
     - assets/animations/
