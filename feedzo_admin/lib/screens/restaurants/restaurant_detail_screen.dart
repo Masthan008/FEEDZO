@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../services/restaurant_admin_service.dart';
+import '../../widgets/topbar.dart';
 import 'menu_management_screen.dart';
+import 'restaurant_form_dialog.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   final String restaurantId;
@@ -171,21 +173,114 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     }
   }
 
+  Future<void> _editRestaurant(AdminRestaurant restaurant) async {
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      builder: (context) => RestaurantFormDialog(existingRestaurant: restaurant),
+    );
+
+    if (result != null) {
+      setState(() => _isLoading = true);
+      try {
+        await FirebaseFirestore.instance
+            .collection('restaurants')
+            .doc(widget.restaurantId)
+            .update({
+          'name': result['name'],
+          'email': result['email'],
+          'phone': result['phone'],
+          'cuisine': result['cuisine'],
+          'address': result['address'],
+          'commission': result['commissionRate'] ?? 10.0,
+          'fssaiNumber': result['fssaiNumber'],
+          'gstNumber': result['gstNumber'],
+          'panNumber': result['panNumber'],
+          'isApproved': result['isApproved'] ?? restaurant.isApproved,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Also update user record if email changed
+        if (result['email'] != restaurant.email) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(widget.restaurantId)
+              .update({'email': result['email']});
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Restaurant updated successfully'),
+              backgroundColor: AppColors.statusDelivered,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating restaurant: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: FutureBuilder<AdminRestaurant?>(
-        future: _service.getRestaurantById(widget.restaurantId),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('restaurants').doc(widget.restaurantId).snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          final restaurant = snapshot.data;
-          if (restaurant == null) {
-            return const Center(child: Text('Restaurant not found'));
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text('Error loading restaurant: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => setState(() {}),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
+
+          final doc = snapshot.data;
+          if (doc == null || !doc.exists) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.restaurant_outlined, size: 64, color: AppColors.textSecondary),
+                  const SizedBox(height: 16),
+                  const Text('Restaurant not found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('ID: ${widget.restaurantId}', style: const TextStyle(color: AppColors.textSecondary)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final restaurant = AdminRestaurant.fromMap(doc.id, doc.data() as Map<String, dynamic>);
 
           return CustomScrollView(
             slivers: [
@@ -210,9 +305,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   else ...[
                     IconButton(
                       icon: const Icon(Icons.edit_outlined),
-                      onPressed: () {
-                        // TODO: Navigate to edit screen
-                      },
+                      onPressed: () => _editRestaurant(restaurant),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.white),

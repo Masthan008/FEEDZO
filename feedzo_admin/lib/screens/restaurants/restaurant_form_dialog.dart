@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
+import '../../data/models.dart';
 
 class RestaurantFormDialog extends StatefulWidget {
-  const RestaurantFormDialog({super.key});
+  final AdminRestaurant? existingRestaurant;
+  
+  const RestaurantFormDialog({super.key, this.existingRestaurant});
 
   @override
   State<RestaurantFormDialog> createState() => _RestaurantFormDialogState();
@@ -23,6 +26,25 @@ class _RestaurantFormDialogState extends State<RestaurantFormDialog> {
   
   bool _isApproved = true;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill controllers if editing existing restaurant
+    if (widget.existingRestaurant != null) {
+      final r = widget.existingRestaurant!;
+      _nameCtrl.text = r.name;
+      _emailCtrl.text = r.email;
+      _phoneCtrl.text = r.phone;
+      _cuisineCtrl.text = r.cuisine;
+      _addressCtrl.text = r.address ?? r.location;
+      _commissionCtrl.text = r.commissionRate.toStringAsFixed(0);
+      _fssaiCtrl.text = r.fssaiNumber ?? '';
+      _gstCtrl.text = r.gstNumber ?? '';
+      _panCtrl.text = r.panNumber ?? '';
+      _isApproved = r.isApproved;
+    }
+  }
 
   @override
   void dispose() {
@@ -78,10 +100,10 @@ class _RestaurantFormDialogState extends State<RestaurantFormDialog> {
                 children: [
                   const Icon(Icons.restaurant, color: Colors.white, size: 28),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Add New Restaurant',
-                      style: TextStyle(
+                      widget.existingRestaurant != null ? 'Edit Restaurant' : 'Add New Restaurant',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -179,24 +201,27 @@ class _RestaurantFormDialogState extends State<RestaurantFormDialog> {
                         validator: (v) => v?.trim().isEmpty ?? true ? 'Required' : null,
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passwordCtrl,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Password *',
-                          hintText: 'Min 6 characters',
-                          prefixIcon: const Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      if (widget.existingRestaurant == null) ...[
+                        TextFormField(
+                          controller: _passwordCtrl,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: 'Password *',
+                            hintText: 'Min 6 characters',
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            ),
                           ),
+                          validator: (v) {
+                            if (v?.isEmpty ?? true) return 'Required';
+                            if (v!.length < 6) return 'Min 6 characters';
+                            return null;
+                          },
                         ),
-                        validator: (v) {
-                          if (v?.isEmpty ?? true) return 'Required';
-                          if (v!.length < 6) return 'Min 6 characters';
-                          return null;
-                        },
-                      ),
+                        const SizedBox(height: 16),
+                      ],
                       
                       const SizedBox(height: 24),
                       const Divider(),
