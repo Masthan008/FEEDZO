@@ -361,7 +361,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         Text(
                           restaurant.cuisine,
                           style: TextStyle(
-                            color: Colors.white.withAlpha(200),
+                            color: Colors.white.withAlpha(230),
                             fontSize: 14,
                           ),
                         ),
@@ -477,16 +477,16 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: statusColor.withAlpha(20),
+        color: statusColor.withAlpha(30),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: statusColor.withAlpha(50)),
+        border: Border.all(color: statusColor.withAlpha(100)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: statusColor.withAlpha(30),
+              color: statusColor.withAlpha(50),
               shape: BoxShape.circle,
             ),
             child: Icon(statusIcon, color: statusColor, size: 28),
@@ -510,7 +510,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     'Tap to toggle open/close status',
                     style: TextStyle(
                       fontSize: 12,
-                      color: statusColor.withAlpha(180),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
