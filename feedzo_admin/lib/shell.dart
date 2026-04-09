@@ -20,6 +20,12 @@ import 'screens/recommended_restaurants_screen.dart';
 import 'screens/hike_charges_screen.dart';
 import 'screens/driver_payouts_screen.dart';
 import 'screens/reviews_screen.dart';
+import 'screens/zones_screen.dart';
+import 'screens/cuisines_screen.dart';
+import 'screens/food_addons_screen.dart';
+import 'screens/subscriptions_screen.dart';
+import 'screens/customer_wallet_screen.dart';
+import 'screens/restaurant_withdrawals_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -51,6 +57,12 @@ class _AdminShellState extends State<AdminShell> {
       case AdminPage.hikeCharges: return const HikeChargesScreen();
       case AdminPage.driverPayouts: return const DriverPayoutsScreen();
       case AdminPage.reviews: return const AdminReviewsScreen();
+      case AdminPage.zones: return const ZonesScreen();
+      case AdminPage.cuisines: return const CuisinesScreen();
+      case AdminPage.foodAddons: return const FoodAddonsScreen();
+      case AdminPage.subscriptions: return const SubscriptionsScreen();
+      case AdminPage.customerWallet: return const CustomerWalletScreen();
+      case AdminPage.restaurantWithdrawals: return const RestaurantWithdrawalsScreen();
     }
   }
 

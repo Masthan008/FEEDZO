@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/admin_provider.dart';
 
-enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews }
+enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals }
 
 class Sidebar extends StatelessWidget {
   final AdminPage current;
@@ -67,6 +67,15 @@ class Sidebar extends StatelessWidget {
                   _Item(icon: Icons.auto_awesome_rounded, label: 'AI Insights', page: AdminPage.aiInsights, current: current, onTap: onSelect),
                   _Item(icon: Icons.rate_review_rounded, label: 'Reviews', page: AdminPage.reviews, current: current, onTap: onSelect),
                   _Item(icon: Icons.notifications_rounded, label: 'Alerts', page: AdminPage.alerts, current: current, onTap: onSelect, badge: alertCount > 0 ? alertCount : null),
+                  const SizedBox(height: 16),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('MANAGEMENT', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.location_city_rounded, label: 'Zones', page: AdminPage.zones, current: current, onTap: onSelect),
+                  _Item(icon: Icons.restaurant_menu_rounded, label: 'Cuisines', page: AdminPage.cuisines, current: current, onTap: onSelect),
+                  _Item(icon: Icons.add_circle_outline_rounded, label: 'Food Addons', page: AdminPage.foodAddons, current: current, onTap: onSelect),
+                  _Item(icon: Icons.card_membership_rounded, label: 'Subscriptions', page: AdminPage.subscriptions, current: current, onTap: onSelect),
+                  _Item(icon: Icons.account_balance_wallet_rounded, label: 'Customer Wallet', page: AdminPage.customerWallet, current: current, onTap: onSelect),
+                  _Item(icon: Icons.account_balance_rounded, label: 'Restaurant Withdrawals', page: AdminPage.restaurantWithdrawals, current: current, onTap: onSelect),
                   const SizedBox(height: 16),
                   const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('SYSTEM', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
                   const SizedBox(height: 8),
