@@ -36,6 +36,11 @@ import 'screens/chat_system_screen.dart';
 import 'screens/newsletter_screen.dart';
 import 'screens/app_version_screen.dart';
 import 'screens/landing_page_screen.dart';
+import 'screens/tips_screen.dart';
+import 'screens/verification_screen.dart';
+import 'screens/third_party_config_screen.dart';
+import 'screens/bulk_import_export_screen.dart';
+import 'screens/database_cleanup_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -83,6 +88,11 @@ class _AdminShellState extends State<AdminShell> {
       case AdminPage.newsletter: return const NewsletterScreen();
       case AdminPage.appVersion: return const AppVersionScreen();
       case AdminPage.landingPage: return const LandingPageScreen();
+      case AdminPage.tips: return const TipsScreen();
+      case AdminPage.verification: return const VerificationScreen();
+      case AdminPage.thirdPartyConfig: return const ThirdPartyConfigScreen();
+      case AdminPage.bulkImportExport: return const BulkImportExportScreen();
+      case AdminPage.databaseCleanup: return const DatabaseCleanupScreen();
     }
   }
 

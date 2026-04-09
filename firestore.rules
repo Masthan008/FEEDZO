@@ -938,5 +938,36 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow create, update, delete: if isAuth() && isAdmin();
   }
 
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 5
+  // ═══════════════════════════════════════════════════
+
+  // ── TIPS ─────────────────────────────────────────
+  // Customer tips to drivers
+  match /tips/{tipId} {
+    allow read: if isAuth() && isAdmin();
+    allow create: if isAuth(); // Customers can add tips
+    allow update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── CUSTOMER VERIFICATIONS ─────────────────────────
+  // Customer identity verifications
+  match /customerVerifications/{verificationId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.customerId == uid()
+    );
+    allow create: if isAuth(); // Customers can submit verifications
+    allow update: if isAuth() && isAdmin(); // Admin approves/rejects
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── THIRD PARTY CONFIGS ────────────────────────────
+  // External service configurations
+  match /thirdPartyConfigs/{configId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
   }
 }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/admin_provider.dart';
 
-enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals, languageSettings, themeSettings, emailTemplates, socialMedia, legalPages, aboutUs, chatSystem, newsletter, appVersion, landingPage }
+enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals, languageSettings, themeSettings, emailTemplates, socialMedia, legalPages, aboutUs, chatSystem, newsletter, appVersion, landingPage, tips, verification, thirdPartyConfig, bulkImportExport, databaseCleanup }
 
 class Sidebar extends StatelessWidget {
   final AdminPage current;
@@ -95,6 +95,14 @@ class Sidebar extends StatelessWidget {
                   const SizedBox(height: 8),
                   _Item(icon: Icons.system_update_rounded, label: 'App Version', page: AdminPage.appVersion, current: current, onTap: onSelect),
                   _Item(icon: Icons.web_rounded, label: 'Landing Page', page: AdminPage.landingPage, current: current, onTap: onSelect),
+                  const SizedBox(height: 16),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('OPERATIONS', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.attach_money_rounded, label: 'Tips', page: AdminPage.tips, current: current, onTap: onSelect),
+                  _Item(icon: Icons.verified_user_rounded, label: 'Verification', page: AdminPage.verification, current: current, onTap: onSelect),
+                  _Item(icon: Icons.extension_rounded, label: '3rd Party Config', page: AdminPage.thirdPartyConfig, current: current, onTap: onSelect),
+                  _Item(icon: Icons.swap_horiz_rounded, label: 'Bulk Import/Export', page: AdminPage.bulkImportExport, current: current, onTap: onSelect),
+                  _Item(icon: Icons.cleaning_services_rounded, label: 'Database Cleanup', page: AdminPage.databaseCleanup, current: current, onTap: onSelect),
                   const SizedBox(height: 16),
                   const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('SYSTEM', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
                   const SizedBox(height: 8),
