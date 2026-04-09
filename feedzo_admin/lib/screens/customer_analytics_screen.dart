@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/theme.dart';
 import '../widgets/topbar.dart';
 
@@ -16,43 +17,81 @@ class _CustomerAnalyticsScreenState extends State<CustomerAnalyticsScreen> {
       children: [
         const TopBar(title: 'Customer Analytics', subtitle: 'View customer behavior analytics'),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 24,
-              mainAxisSpacing: 24,
-              children: [
-                _buildAnalyticsCard(
-                  title: 'Total Customers',
-                  icon: Icons.people,
-                  color: Colors.blue,
-                  value: '12,450',
-                  subtitle: 'Registered users',
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('users').snapshots(),
+            builder: (context, usersSnapshot) {
+              if (usersSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (usersSnapshot.hasError) {
+                return Center(child: Text('Error: ${usersSnapshot.error}'));
+              }
+
+              final users = usersSnapshot.data?.docs ?? [];
+              final totalCustomers = users.length;
+              
+              final now = DateTime.now();
+              final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+              final activeCustomers = users.where((u) {
+                final data = u.data() as Map<String, dynamic>;
+                final lastActive = data['lastActiveAt'] as Timestamp?;
+                if (lastActive == null) return false;
+                return lastActive.toDate().isAfter(thirtyDaysAgo);
+              }).length;
+
+              final oneMonthAgo = DateTime(now.year, now.month - 1, now.day);
+              final newSignups = users.where((u) {
+                final data = u.data() as Map<String, dynamic>;
+                final createdAt = data['createdAt'] as Timestamp?;
+                if (createdAt == null) return false;
+                return createdAt.toDate().isAfter(oneMonthAgo);
+              }).length;
+
+              // Calculate retention rate (simplified)
+              final retentionRate = totalCustomers > 0 
+                  ? ((activeCustomers / totalCustomers) * 100).toStringAsFixed(0) 
+                  : '0';
+
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 24,
+                  mainAxisSpacing: 24,
+                  children: [
+                    _buildAnalyticsCard(
+                      title: 'Total Customers',
+                      icon: Icons.people,
+                      color: Colors.blue,
+                      value: totalCustomers.toString(),
+                      subtitle: 'Registered users',
+                    ),
+                    _buildAnalyticsCard(
+                      title: 'Active Customers',
+                      icon: Icons.person_pin,
+                      color: Colors.green,
+                      value: activeCustomers.toString(),
+                      subtitle: 'Active in last 30 days',
+                    ),
+                    _buildAnalyticsCard(
+                      title: 'New Signups',
+                      icon: Icons.person_add,
+                      color: Colors.orange,
+                      value: '+$newSignups',
+                      subtitle: 'This month',
+                    ),
+                    _buildAnalyticsCard(
+                      title: 'Retention Rate',
+                      icon: Icons.sync,
+                      color: Colors.purple,
+                      value: '$retentionRate%',
+                      subtitle: '30-day retention',
+                    ),
+                  ],
                 ),
-                _buildAnalyticsCard(
-                  title: 'Active Customers',
-                  icon: Icons.person_pin,
-                  color: Colors.green,
-                  value: '8,230',
-                  subtitle: 'Active in last 30 days',
-                ),
-                _buildAnalyticsCard(
-                  title: 'New Signups',
-                  icon: Icons.person_add,
-                  color: Colors.orange,
-                  value: '+425',
-                  subtitle: 'This month',
-                ),
-                _buildAnalyticsCard(
-                  title: 'Retention Rate',
-                  icon: Icons.sync,
-                  color: Colors.purple,
-                  value: '78%',
-                  subtitle: '30-day retention',
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
