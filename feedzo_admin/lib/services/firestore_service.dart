@@ -11,6 +11,10 @@ class AdminFirestoreService {
   static CollectionReference get transactions => _db.collection('transactions');
   static CollectionReference get alerts => _db.collection('alerts');
   static CollectionReference get activities => _db.collection('activities');
+  static CollectionReference get recurringOrders => _db.collection('recurringOrders');
+  static CollectionReference get splitPayments => _db.collection('splitPayments');
+  static CollectionReference get groupOrders => _db.collection('groupOrders');
+  static CollectionReference get tips => _db.collection('tips');
 
   // ── Real-time streams ─────────────────────────────────────────────────────
   static Stream<QuerySnapshot> watchAllOrders() =>
@@ -34,6 +38,18 @@ class AdminFirestoreService {
 
   static Stream<QuerySnapshot> watchActivityFeed() =>
       activities.orderBy('createdAt', descending: true).snapshots();
+
+  static Stream<QuerySnapshot> watchRecurringOrders() =>
+      recurringOrders.orderBy('createdAt', descending: true).snapshots();
+
+  static Stream<QuerySnapshot> watchSplitPayments() =>
+      splitPayments.orderBy('createdAt', descending: true).snapshots();
+
+  static Stream<QuerySnapshot> watchGroupOrders() =>
+      groupOrders.orderBy('createdAt', descending: true).snapshots();
+
+  static Stream<QuerySnapshot> watchTips() =>
+      tips.orderBy('createdAt', descending: true).snapshots();
 
   // ── Approval system ───────────────────────────────────────────────────────
   static Future<void> approveUser(String uid) =>

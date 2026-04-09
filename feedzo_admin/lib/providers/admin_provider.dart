@@ -47,6 +47,10 @@ class AdminProvider extends ChangeNotifier {
   List<ActivityFeedItem> activityFeed = [];
   List<DriverDailySummary> driverSummaries = [];
   Map<String, List<DriverSettlementRecord>> settlementHistory = {};
+  List<Map<String, dynamic>> recurringOrders = [];
+  List<Map<String, dynamic>> splitPayments = [];
+  List<Map<String, dynamic>> groupOrders = [];
+  List<Map<String, dynamic>> tips = [];
   double commissionRate = 0.10;
   SystemSettings settings = SystemSettings();
 
@@ -57,6 +61,10 @@ class AdminProvider extends ChangeNotifier {
   StreamSubscription? _alertsSub;
   StreamSubscription? _activitiesSub;
   StreamSubscription? _settlementsSub;
+  StreamSubscription? _recurringOrdersSub;
+  StreamSubscription? _splitPaymentsSub;
+  StreamSubscription? _groupOrdersSub;
+  StreamSubscription? _tipsSub;
 
   void initStreams() {
     _ordersSub = AdminFirestoreService.watchAllOrders().listen((snapshot) {
@@ -87,6 +95,22 @@ class AdminProvider extends ChangeNotifier {
       driverSummaries = snapshot.docs.map((doc) => DriverDailySummary.fromMap(doc.id, doc.data() as Map<String, dynamic>)).toList();
       notifyListeners();
     });
+    _recurringOrdersSub = AdminFirestoreService.watchRecurringOrders().listen((snapshot) {
+      recurringOrders = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      notifyListeners();
+    });
+    _splitPaymentsSub = AdminFirestoreService.watchSplitPayments().listen((snapshot) {
+      splitPayments = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      notifyListeners();
+    });
+    _groupOrdersSub = AdminFirestoreService.watchGroupOrders().listen((snapshot) {
+      groupOrders = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      notifyListeners();
+    });
+    _tipsSub = AdminFirestoreService.watchTips().listen((snapshot) {
+      tips = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      notifyListeners();
+    });
   }
 
   void disposeStreams() {
@@ -97,6 +121,10 @@ class AdminProvider extends ChangeNotifier {
     _alertsSub?.cancel();
     _activitiesSub?.cancel();
     _settlementsSub?.cancel();
+    _recurringOrdersSub?.cancel();
+    _splitPaymentsSub?.cancel();
+    _groupOrdersSub?.cancel();
+    _tipsSub?.cancel();
   }
 
   @override
@@ -278,16 +306,36 @@ class AdminProvider extends ChangeNotifier {
   bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
   void markAlertRead(String id) {
-    final idx = alerts.indexWhere((a) => a.id == id);
-    if (idx >= 0) { alerts[idx].isRead = true; notifyListeners(); }
+    AdminFirestoreService.alerts.doc(id).update({'isRead': true});
   }
 
-  void markAllAlertsRead() { for (final a in alerts) { a.isRead = true; } notifyListeners(); }
+  void markAllAlertsRead() {
+    for (final alert in alerts) {
+      AdminFirestoreService.alerts.doc(alert.id).update({'isRead': true});
+    }
+  }
 
-  void _addAlert(AdminAlert alert) { alerts.insert(0, alert); }
+  void _addAlert(AdminAlert alert) {
+    // Write to Firestore
+    AdminFirestoreService.alerts.add({
+      'title': alert.title,
+      'description': alert.description,
+      'severity': alert.severity.toString(),
+      'type': alert.type.toString(),
+      'createdAt': FieldValue.serverTimestamp(),
+      if (alert.orderId != null) 'orderId': alert.orderId,
+      if (alert.customerName != null) 'customerName': alert.customerName,
+      if (alert.restaurantName != null) 'restaurantName': alert.restaurantName,
+      'isRead': false,
+    });
+  }
 
   void _addActivity(ActivityType type, String message) {
-    activityFeed.insert(0, ActivityFeedItem(id: 'act${DateTime.now().millisecondsSinceEpoch}', type: type, message: message, time: DateTime.now()));
-    if (activityFeed.length > 50) activityFeed.removeLast();
+    // Write to Firestore
+    AdminFirestoreService.activities.add({
+      'type': type.toString(),
+      'message': message,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 }
