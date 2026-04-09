@@ -969,5 +969,147 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow create, update, delete: if isAuth() && isAdmin();
   }
 
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 6
+  // ═══════════════════════════════════════════════════
+
+  // ── DRIVER EARNINGS ────────────────────────────────
+  // Driver earnings tracking
+  match /driverEarnings/{earningsId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── DRIVER CASH LIMITS ─────────────────────────────
+  // Maximum cash in hand limits for drivers
+  match /driverCashLimits/{limitId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.driverId == uid()
+    );
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 7
+  // ═══════════════════════════════════════════════════
+
+  // ── BUSINESS CONFIGS ───────────────────────────────
+  // Business model configurations
+  match /businessConfigs/{configId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── SELF-REGISTRATION SETTINGS ─────────────────────
+  // Self-registration configuration
+  match /selfRegistrationSettings/{settingId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 8
+  // ═══════════════════════════════════════════════════
+
+  // ── SUBSCRIPTION REPORTS ────────────────────────────
+  // Subscription order reports
+  match /subscriptionReports/{reportId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── CAMPAIGN REPORTS ──────────────────────────────
+  // Marketing campaign reports
+  match /campaignReports/{reportId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 9
+  // ═══════════════════════════════════════════════════
+
+  // ── ANALYTICS DATA ─────────────────────────────────
+  // Analytics data for dashboard
+  match /analytics/{analyticsId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 10
+  // ═══════════════════════════════════════════════════
+
+  // ── INVENTORY DATA ─────────────────────────────────
+  // Inventory management data
+  match /inventory/{inventoryId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── LOYALTY DATA ───────────────────────────────────
+  // Loyalty program data
+  match /loyalty/{loyaltyId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── REFERRAL DATA ───────────────────────────────────
+  // Referral program data
+  match /referrals/{referralId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── PROMOTIONS DATA ─────────────────────────────────
+  // Promotions data
+  match /promotions/{promotionId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── SCHEDULES DATA ──────────────────────────────────
+  // Schedule management data
+  match /schedules/{scheduleId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── SUPPORT TICKETS ────────────────────────────────
+  // Support tickets data
+  match /supportTickets/{ticketId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.customerId == uid()
+    );
+    allow create: if isAuth();
+    allow update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── AUDIT LOGS ────────────────────────────────────
+  // System audit logs
+  match /auditLogs/{logId} {
+    allow read: if isAuth() && isAdmin();
+    allow create: if true; // System can write logs
+    allow update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── FEEDBACK DATA ──────────────────────────────────
+  // Customer feedback data
+  match /feedback/{feedbackId} {
+    allow read: if isAuth() && isAdmin();
+    allow create: if isAuth();
+    allow update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── ACTIVITY LOGS ─────────────────────────────────
+  // User activity logs
+  match /activityLogs/{activityId} {
+    allow read: if isAuth() && isAdmin();
+    allow create: if true; // System can write logs
+    allow update, delete: if isAuth() && isAdmin();
+  }
+
   }
 }

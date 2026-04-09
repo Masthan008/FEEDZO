@@ -65,7 +65,7 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
                       ),
                       _buildCleanupCard(
                         title: 'Clean Expired Sessions',
-                        icon: Icons.session,
+                        icon: Icons.event_session,
                         color: Colors.orange,
                         description: 'Delete expired user sessions',
                         action: () => _cleanupCollection('sessions'),
