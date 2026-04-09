@@ -760,5 +760,104 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow delete: if isAuth() && isAdmin();
   }
 
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 2
+  // ═══════════════════════════════════════════════════
+
+  // ── ZONES ───────────────────────────────────────────
+  // Admin manages delivery zones; public read for order calculations
+  match /zones/{zoneId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── CUISINES ─────────────────────────────────────────
+  // Admin manages cuisine categories; public read
+  match /cuisines/{cuisineId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── FOOD ADDONS ─────────────────────────────────────
+  // Admin manages food addons; restaurants can read for their items
+  match /foodAddons/{addonId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── SUBSCRIPTIONS ───────────────────────────────────
+  // Admin manages subscription packages; public read
+  match /subscriptions/{subscriptionId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── RESTAURANT SUBSCRIPTIONS ─────────────────────────
+  // Admin manages restaurant subscriptions; restaurants can read their own
+  match /restaurantSubscriptions/{subId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.restaurantId == uid()
+    );
+    allow create: if isAuth() && isAdmin();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── CUSTOMER WALLETS ─────────────────────────────────
+  // Admin manages customer wallets; customers can read their own
+  match /customerWallets/{walletId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.customerId == uid()
+    );
+    allow create: if isAuth() && isAdmin();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── CUSTOMER LOYALTY POINTS ─────────────────────────
+  // Admin manages loyalty points; customers can read their own
+  match /customerLoyaltyPoints/{pointsId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.customerId == uid()
+    );
+    allow create: if isAuth() && isAdmin();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── RESTAURANT WITHDRAWALS ───────────────────────────
+  // Admin manages restaurant withdrawal requests; restaurants can read their own
+  match /restaurantWithdrawals/{withdrawalId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.restaurantId == uid()
+    );
+    allow create: if isAuth() && isRestaurant();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
+  // ── WITHDRAWAL METHODS ───────────────────────────────
+  // Admin manages withdrawal method configurations
+  match /withdrawalMethods/{methodId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── MONTHLY REPORTS ─────────────────────────────────
+  // Admin manages monthly reports for restaurants
+  match /monthlyReports/{reportId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.restaurantId == uid()
+    );
+    allow create: if isAuth() && isAdmin();
+    allow update: if isAuth() && isAdmin();
+    allow delete: if isAuth() && isAdmin();
+  }
+
   }
 }
