@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "cuisines",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "priority", "order": "DESCENDING"},
+        {"fieldPath": "name", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "cuisines",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "isActive", "order": "ASCENDING"},
+        {"fieldPath": "priority", "order": "DESCENDING"},
+        {"fieldPath": "name", "order": "ASCENDING"}
+      ]
+    }
+  ]
+}
