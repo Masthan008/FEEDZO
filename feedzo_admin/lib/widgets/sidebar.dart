@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/admin_provider.dart';
 
-enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals }
+enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals, languageSettings, themeSettings, emailTemplates, socialMedia, legalPages, aboutUs }
 
 class Sidebar extends StatelessWidget {
   final AdminPage current;
@@ -76,6 +76,15 @@ class Sidebar extends StatelessWidget {
                   _Item(icon: Icons.card_membership_rounded, label: 'Subscriptions', page: AdminPage.subscriptions, current: current, onTap: onSelect),
                   _Item(icon: Icons.account_balance_wallet_rounded, label: 'Customer Wallet', page: AdminPage.customerWallet, current: current, onTap: onSelect),
                   _Item(icon: Icons.account_balance_rounded, label: 'Restaurant Withdrawals', page: AdminPage.restaurantWithdrawals, current: current, onTap: onSelect),
+                  const SizedBox(height: 16),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('CONTENT', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.language_rounded, label: 'Language Settings', page: AdminPage.languageSettings, current: current, onTap: onSelect),
+                  _Item(icon: Icons.palette_rounded, label: 'Theme Settings', page: AdminPage.themeSettings, current: current, onTap: onSelect),
+                  _Item(icon: Icons.email_rounded, label: 'Email Templates', page: AdminPage.emailTemplates, current: current, onTap: onSelect),
+                  _Item(icon: Icons.share_rounded, label: 'Social Media', page: AdminPage.socialMedia, current: current, onTap: onSelect),
+                  _Item(icon: Icons.gavel_rounded, label: 'Legal Pages', page: AdminPage.legalPages, current: current, onTap: onSelect),
+                  _Item(icon: Icons.info_rounded, label: 'About Us', page: AdminPage.aboutUs, current: current, onTap: onSelect),
                   const SizedBox(height: 16),
                   const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('SYSTEM', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
                   const SizedBox(height: 8),

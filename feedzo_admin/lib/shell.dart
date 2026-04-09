@@ -26,6 +26,12 @@ import 'screens/food_addons_screen.dart';
 import 'screens/subscriptions_screen.dart';
 import 'screens/customer_wallet_screen.dart';
 import 'screens/restaurant_withdrawals_screen.dart';
+import 'screens/language_settings_screen.dart';
+import 'screens/theme_settings_screen.dart';
+import 'screens/email_templates_screen.dart';
+import 'screens/social_media_screen.dart';
+import 'screens/legal_pages_screen.dart';
+import 'screens/about_us_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -63,6 +69,12 @@ class _AdminShellState extends State<AdminShell> {
       case AdminPage.subscriptions: return const SubscriptionsScreen();
       case AdminPage.customerWallet: return const CustomerWalletScreen();
       case AdminPage.restaurantWithdrawals: return const RestaurantWithdrawalsScreen();
+      case AdminPage.languageSettings: return const LanguageSettingsScreen();
+      case AdminPage.themeSettings: return const ThemeSettingsScreen();
+      case AdminPage.emailTemplates: return const EmailTemplatesScreen();
+      case AdminPage.socialMedia: return const SocialMediaScreen();
+      case AdminPage.legalPages: return const LegalPagesScreen();
+      case AdminPage.aboutUs: return const AboutUsScreen();
     }
   }
 

@@ -859,5 +859,51 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow delete: if isAuth() && isAdmin();
   }
 
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 3
+  // ═══════════════════════════════════════════════════
+
+  // ── LANGUAGES ───────────────────────────────────────
+  // Admin manages language settings; public read
+  match /languages/{languageId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── THEMES ──────────────────────────────────────────
+  // Admin manages theme settings; public read
+  match /themes/{themeId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── EMAIL TEMPLATES ─────────────────────────────────
+  // Admin manages email templates
+  match /emailTemplates/{templateId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── SOCIAL MEDIA ────────────────────────────────────
+  // Admin manages social media links; public read
+  match /socialMedia/{mediaId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── LEGAL PAGES ─────────────────────────────────────
+  // Admin manages legal pages; public read
+  match /legalPages/{pageId} {
+    allow read: if isAuth();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── ABOUT US ────────────────────────────────────────
+  // Admin manages about us page; public read
+  match /aboutUs/{docId} {
+    allow read: if isAuth();
+    allow create, update: if isAuth() && isAdmin();
+  }
+
   }
 }

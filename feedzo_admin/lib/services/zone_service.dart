@@ -55,7 +55,7 @@ class ZoneService {
   }
 
   /// Calculate delivery charge for a zone based on distance
-  static double calculateDeliveryCharge(
+  static Future<double> calculateDeliveryCharge(
     String zoneId,
     double distanceKm,
   ) async {
