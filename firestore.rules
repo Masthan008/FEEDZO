@@ -10,8 +10,18 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid())).data;
     }
 
-    function role() { return userDoc().role; }
-    function isAdmin() { return role() == 'admin'; }
+    function role() { 
+      return userDoc().role; 
+    }
+    
+    function isAdmin() { 
+      return role() == 'admin'; 
+    }
+    
+    function isSuperAdmin() {
+      // Allow super admin by email for initial setup
+      return request.auth.token.email == 'admin@feedzo.com' || isAdmin();
+    }
     function isDriver() { return role() == 'driver'; }
     function isRestaurant() { return role() == 'restaurant'; }
     function isCustomer() { return role() == 'customer'; }
@@ -858,7 +868,7 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
   // Admin manages cuisine categories; public read
   match /cuisines/{cuisineId} {
     allow read: if isAuth();
-    allow create, update, delete: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isSuperAdmin();
   }
 
   // ── FOOD ADDONS ─────────────────────────────────────
