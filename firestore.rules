@@ -279,7 +279,7 @@ match /reviews/{reviewId} {
   allow update: if isAuth() && (
     // Owner editing their review
     (resource.data.customerId == uid() &&
-     request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+     request.resource.data.diff(resource.data).changedKeys().hasOnly([
        'reviewText', 'rating', 'tags', 'photoUrls', 'isEdited', 'editedAt'
      ]) &&
      isValidRating() &&
@@ -290,14 +290,14 @@ match /reviews/{reviewId} {
     (isRestaurant() &&
      resource.data.targetType == 'restaurant' &&
      resource.data.targetId == uid() &&
-     request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+     request.resource.data.diff(resource.data).changedKeys().hasOnly([
        'restaurantResponse', 'restaurantResponseAt'
      ]) &&
      request.resource.data.restaurantResponse is string &&
      request.resource.data.restaurantResponse.size() <= 500) ||
     // Admin moderating
     (isAdmin() &&
-     request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+     request.resource.data.diff(resource.data).changedKeys().hasOnly([
        'isVisible', 'moderationReason'
      ]))
   );
