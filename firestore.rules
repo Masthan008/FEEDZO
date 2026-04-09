@@ -485,26 +485,25 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
   }
 
   // ── SPLIT PAYMENTS ─────────────────────────────────────
-  // Users can read split payments they're part of
+  // Users can read split payments they created
   match /splitPayments/{docId} {
     allow read: if isAuth() && (
       isAdmin() ||
-      request.resource.data.splits.any(split => split.userId == uid())
+      resource.data.creatorId == uid()
     );
     allow create: if isAuth() && isCustomer();
     allow update: if isAuth() && (
       isAdmin() ||
-      request.resource.data.splits.any(split => split.userId == uid())
+      resource.data.creatorId == uid()
     );
   }
 
   // ── GROUP ORDERS ─────────────────────────────────────
-  // Users can manage group orders they're part of
+  // Users can manage group orders they created
   match /groupOrders/{docId} {
     allow read: if isAuth() && (
       isAdmin() ||
-      resource.data.creatorId == uid() ||
-      request.resource.data.participants.any(p => p.userId == uid())
+      resource.data.creatorId == uid()
     );
     allow create: if isAuth() && isCustomer();
     allow update: if isAuth() && (
