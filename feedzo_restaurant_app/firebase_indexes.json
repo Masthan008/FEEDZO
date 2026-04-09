@@ -1,0 +1,103 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"},
+        {"fieldPath": "scheduledFor", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "targetId", "order": "ASCENDING"},
+        {"fieldPath": "targetType", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"},
+        {"fieldPath": "isAvailable", "order": "ASCENDING"},
+        {"fieldPath": "category", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "restaurantPayoutRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "requestedAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "chat_messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "orderId", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "restaurants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "ownerId", "order": "ASCENDING"},
+        {"fieldPath": "isOpen", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "schedules",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "driverNotifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"},
+        {"fieldPath": "isRead", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "driverAssignmentLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "commissionSettings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "restaurantId", "order": "ASCENDING"}
+      ]
+    }
+  ]
+}
