@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../core/theme.dart';
 import '../models/newsletter_model.dart';
 import '../services/newsletter_service.dart';
