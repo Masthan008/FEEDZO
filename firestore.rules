@@ -79,6 +79,20 @@ service cloud.firestore {
       );
     }
 
+  // ── ORDER TRACKING (Subcollection) ─────────────────
+  match /orders/{orderId}/tracking/{docId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      request.resource.data.customerId == uid() ||
+      request.resource.data.driverId == uid() ||
+      request.resource.data.restaurantId == uid()
+    );
+    allow write: if isAuth() && (
+      isAdmin() ||
+      (isDriver() && request.resource.data.driverId == uid())
+    );
+  }
+
   // ── ORDERS ─────────────────────────────────────────
   match /orders/{orderId} {
     // Validation helpers
@@ -426,6 +440,76 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow delete: if isAuth() && (
       isAdmin() ||
       resource.data.customerId == uid()
+    );
+  }
+
+  // ── OFFLINE SYNC COLLECTIONS ───────────────────────────
+  // Users can create pending operations when offline
+  match /pending_orders/{docId} {
+    allow read: if isAuth() && resource.data.userId == uid();
+    allow create: if isAuth();
+    allow update: if isAuth() && resource.data.userId == uid();
+    allow delete: if isAuth() && resource.data.userId == uid();
+  }
+
+  match /pending_reviews/{docId} {
+    allow read: if isAuth() && resource.data.userId == uid();
+    allow create: if isAuth();
+    allow update: if isAuth() && resource.data.userId == uid();
+    allow delete: if isAuth() && resource.data.userId == uid();
+  }
+
+  match /pending_profile_updates/{docId} {
+    allow read: if isAuth() && resource.data.userId == uid();
+    allow create: if isAuth();
+    allow update: if isAuth() && resource.data.userId == uid();
+    allow delete: if isAuth() && resource.data.userId == uid();
+  }
+
+  // ── RECURRING ORDERS ───────────────────────────────────
+  // Customers can manage their recurring orders
+  match /recurringOrders/{docId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+    allow create: if isAuth() && isCustomer();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+    allow delete: if isAuth() && (
+      isAdmin() ||
+      resource.data.userId == uid()
+    );
+  }
+
+  // ── SPLIT PAYMENTS ─────────────────────────────────────
+  // Users can read split payments they're part of
+  match /splitPayments/{docId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      request.resource.data.splits.any(split => split.userId == uid())
+    );
+    allow create: if isAuth() && isCustomer();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      request.resource.data.splits.any(split => split.userId == uid())
+    );
+  }
+
+  // ── GROUP ORDERS ─────────────────────────────────────
+  // Users can manage group orders they're part of
+  match /groupOrders/{docId} {
+    allow read: if isAuth() && (
+      isAdmin() ||
+      resource.data.creatorId == uid() ||
+      request.resource.data.participants.any(p => p.userId == uid())
+    );
+    allow create: if isAuth() && isCustomer();
+    allow update: if isAuth() && (
+      isAdmin() ||
+      resource.data.creatorId == uid()
     );
   }
 
