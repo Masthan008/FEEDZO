@@ -13,15 +13,6 @@
       "collectionGroup": "orders",
       "queryScope": "COLLECTION",
       "fields": [
-        {"fieldPath": "driverId", "order": "IS_NULL"},
-        {"fieldPath": "status", "order": "ASCENDING"},
-        {"fieldPath": "createdAt", "order": "DESCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "orders",
-      "queryScope": "COLLECTION",
-      "fields": [
         {"fieldPath": "driverId", "order": "ASCENDING"},
         {"fieldPath": "scheduledFor", "order": "ASCENDING"}
       ]
@@ -33,13 +24,6 @@
         {"fieldPath": "targetId", "order": "ASCENDING"},
         {"fieldPath": "targetType", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "settlements",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "driverId", "order": "ASCENDING"}
       ]
     },
     {
@@ -103,20 +87,6 @@
       ]
     },
     {
-      "collectionGroup": "vehicleCoverage",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "isActive", "order": "ASCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "schedules",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "driverId", "order": "ASCENDING"}
-      ]
-    },
-    {
       "collectionGroup": "incentives",
       "queryScope": "COLLECTION",
       "fields": [
@@ -132,13 +102,6 @@
         {"fieldPath": "driverId", "order": "ASCENDING"},
         {"fieldPath": "period", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "driverCashLimits",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "driverId", "order": "ASCENDING"}
       ]
     }
   ]

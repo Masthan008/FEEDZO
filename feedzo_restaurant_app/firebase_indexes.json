@@ -69,13 +69,6 @@
       ]
     },
     {
-      "collectionGroup": "schedules",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "restaurantId", "order": "ASCENDING"}
-      ]
-    },
-    {
       "collectionGroup": "driverNotifications",
       "queryScope": "COLLECTION",
       "fields": [
@@ -90,13 +83,6 @@
       "fields": [
         {"fieldPath": "restaurantId", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "commissionSettings",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "restaurantId", "order": "ASCENDING"}
       ]
     }
   ]

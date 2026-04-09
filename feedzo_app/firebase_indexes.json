@@ -75,13 +75,6 @@
       ]
     },
     {
-      "collectionGroup": "loyalty_points",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "userId", "order": "ASCENDING"}
-      ]
-    },
-    {
       "collectionGroup": "point_transactions",
       "queryScope": "COLLECTION",
       "fields": [
@@ -105,20 +98,6 @@
         {"fieldPath": "targetUserId", "order": "ASCENDING"},
         {"fieldPath": "isRead", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "customerWallets",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "customerId", "order": "ASCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "favorites",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {"fieldPath": "userId", "order": "ASCENDING"}
       ]
     }
   ]
