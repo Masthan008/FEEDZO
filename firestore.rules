@@ -905,5 +905,38 @@ match /menuItems/{dishId}/reviewStats/{statsId} {
     allow create, update: if isAuth() && isAdmin();
   }
 
+  // ═══════════════════════════════════════════════════
+  // STACKFOOD MISSING FEATURES — Phase 4
+  // ═══════════════════════════════════════════════════
+
+  // ── ADMIN CHATS ────────────────────────────────────
+  // Admin communications with users
+  match /adminChats/{chatId} {
+    allow read: if isAuth() && isAdmin();
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── NEWSLETTER SUBSCRIBERS ─────────────────────────
+  // Newsletter email subscriptions
+  match /newsletterSubscribers/{subscriberId} {
+    allow read: if isAuth() && isAdmin();
+    allow create: if true; // Public can subscribe
+    allow update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── APP VERSIONS ───────────────────────────────────
+  // App version control for updates
+  match /appVersions/{versionId} {
+    allow read: if isAuth(); // Public read for version checking
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
+  // ── LANDING PAGES ─────────────────────────────────
+  // Landing page customization
+  match /landingPages/{pageId} {
+    allow read: if isAuth(); // Public read
+    allow create, update, delete: if isAuth() && isAdmin();
+  }
+
   }
 }

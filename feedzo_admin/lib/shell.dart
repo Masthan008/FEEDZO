@@ -32,6 +32,10 @@ import 'screens/email_templates_screen.dart';
 import 'screens/social_media_screen.dart';
 import 'screens/legal_pages_screen.dart';
 import 'screens/about_us_screen.dart';
+import 'screens/chat_system_screen.dart';
+import 'screens/newsletter_screen.dart';
+import 'screens/app_version_screen.dart';
+import 'screens/landing_page_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -75,6 +79,10 @@ class _AdminShellState extends State<AdminShell> {
       case AdminPage.socialMedia: return const SocialMediaScreen();
       case AdminPage.legalPages: return const LegalPagesScreen();
       case AdminPage.aboutUs: return const AboutUsScreen();
+      case AdminPage.chatSystem: return const ChatSystemScreen();
+      case AdminPage.newsletter: return const NewsletterScreen();
+      case AdminPage.appVersion: return const AppVersionScreen();
+      case AdminPage.landingPage: return const LandingPageScreen();
     }
   }
 

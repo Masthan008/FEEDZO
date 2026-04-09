@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/admin_provider.dart';
 
-enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals, languageSettings, themeSettings, emailTemplates, socialMedia, legalPages, aboutUs }
+enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals, languageSettings, themeSettings, emailTemplates, socialMedia, legalPages, aboutUs, chatSystem, newsletter, appVersion, landingPage }
 
 class Sidebar extends StatelessWidget {
   final AdminPage current;
@@ -85,6 +85,16 @@ class Sidebar extends StatelessWidget {
                   _Item(icon: Icons.share_rounded, label: 'Social Media', page: AdminPage.socialMedia, current: current, onTap: onSelect),
                   _Item(icon: Icons.gavel_rounded, label: 'Legal Pages', page: AdminPage.legalPages, current: current, onTap: onSelect),
                   _Item(icon: Icons.info_rounded, label: 'About Us', page: AdminPage.aboutUs, current: current, onTap: onSelect),
+                  const SizedBox(height: 16),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('COMMUNICATION', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.chat_bubble_rounded, label: 'Chat System', page: AdminPage.chatSystem, current: current, onTap: onSelect),
+                  _Item(icon: Icons.mark_email_read_rounded, label: 'Newsletter', page: AdminPage.newsletter, current: current, onTap: onSelect),
+                  const SizedBox(height: 16),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('APP CONFIG', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+                  const SizedBox(height: 8),
+                  _Item(icon: Icons.system_update_rounded, label: 'App Version', page: AdminPage.appVersion, current: current, onTap: onSelect),
+                  _Item(icon: Icons.web_rounded, label: 'Landing Page', page: AdminPage.landingPage, current: current, onTap: onSelect),
                   const SizedBox(height: 16),
                   const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('SYSTEM', style: TextStyle(color: Color(0xFF4B5563), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2))),
                   const SizedBox(height: 8),
