@@ -196,7 +196,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     );
   }
 
-  Widget _buildColorPicker(TextController controller, String label, Color defaultColor) {
+  Widget _buildColorPicker(TextEditingController controller, String label, Color defaultColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
