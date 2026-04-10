@@ -169,6 +169,7 @@ class FirestoreService {
 
   // ── Orders ────────────────────────────────────────────────────────────────
   static Future<String> placeOrder(Order order) async {
+    debugPrint('[FirestoreService] Placing order for customerId: ${order.customerId}');
     final counterRef = _db.collection('system').doc('counters');
     
     // 1. Transaction to generate consecutive Order ID
@@ -190,9 +191,12 @@ class FirestoreService {
       final data = order.toMap();
       data['createdAt'] = FieldValue.serverTimestamp();
       
+      debugPrint('[FirestoreService] Creating order document with ID: $displayId');
       tx.set(docRef, data);
       return displayId;
     });
+
+    debugPrint('[FirestoreService] Order placed successfully with ID: $newOrderId');
 
     // 2. Create an alert for admin dashboard
     try {

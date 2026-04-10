@@ -30,9 +30,11 @@ class OrderProvider extends ChangeNotifier {
     _ordersSub?.cancel();
     _currentCustomerId = customerId;
     _isLoading = true;
+    debugPrint('[OrderProvider] Initializing with customerId: $customerId');
 
     _ordersSub = FirestoreService.watchCustomerOrders(customerId).listen(
       (data) {
+        debugPrint('[OrderProvider] Received ${data.length} orders');
         _orders = data;
         _isLoading = false;
         notifyListeners();
