@@ -340,8 +340,8 @@ match /ratingSummaries/{summaryId} {
   // READ: All authenticated users
   allow read: if isAuth();
   
-  // WRITE: Only system/cloud functions (calculated data)
-  allow create, update: if false;
+  // WRITE: Authenticated users can update rating summaries during review submission
+  allow create, update: if isAuth();
   
   // DELETE: Only admin
   allow delete: if isAuth() && isAdmin();
