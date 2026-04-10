@@ -155,10 +155,10 @@ class OrderProvider extends ChangeNotifier {
         'acceptedAt': FieldValue.serverTimestamp(),
       };
 
-      // Quick logic: auto assign driver if online
+      // Quick logic: auto assign driver if online/available
       final drivers = await FirebaseFirestore.instance
           .collection('drivers')
-          .where('status', isEqualTo: 'online')
+          .where('status', whereIn: ['online', 'available'])
           .get();
 
       if (drivers.docs.isNotEmpty) {
@@ -174,6 +174,7 @@ class OrderProvider extends ChangeNotifier {
         batch.update(driverRef, {
           'status': 'busy',
           'currentOrderId': orderId,
+          'activeOrderIds': FieldValue.arrayUnion([orderId]),
         });
       }
 
