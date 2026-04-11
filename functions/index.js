@@ -52,7 +52,7 @@ exports.onOrderCreated = functions.firestore
     console.log(`Notified restaurant ${order.restaurantId} for order ${orderId}`);
   });
 
-// ── FUNCTION 2: Driver assigned → notify driver ───────────────────────────────
+// ── FUNCTION 2: Order status changes → send notifications ───────────────────────
 exports.onOrderUpdated = functions.firestore
   .document("orders/{orderId}")
   .onUpdate(async (change, context) => {
@@ -60,7 +60,17 @@ exports.onOrderUpdated = functions.firestore
     const after = change.after.data();
     const orderId = context.params.orderId;
 
-    // Driver assigned
+    // Restaurant accepts order (placed → preparing) → notify customer
+    if (before.status === "placed" && after.status === "preparing") {
+      await sendNotification(
+        [after.customerId],
+        "🍳 Order Accepted!",
+        `${after.restaurantName} has accepted your order. Preparing your food now.`,
+        { orderId, type: "order_accepted" }
+      );
+    }
+
+    // Driver assigned → notify driver
     if (!before.driverId && after.driverId) {
       await sendNotification(
         [after.driverId],
