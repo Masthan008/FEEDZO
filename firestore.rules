@@ -286,7 +286,7 @@ match /reviews/{reviewId} {
   // READ: All authenticated users can read reviews
   allow read: if isAuth();
   
-  // CREATE: Customer must own the order, order must be delivered
+  // CREATE: Customer must own the order
   allow create: if isAuth() && isCustomer() &&
     request.resource.data.customerId == uid() &&
     request.resource.data.id == reviewId &&
@@ -294,7 +294,6 @@ match /reviews/{reviewId} {
     isValidReviewText() &&
     isValidTags() &&
     isValidPhotoUrls() &&
-    isOrderDelivered(request.resource.data.orderId) &&
     ownsOrder(request.resource.data.orderId) &&
     request.resource.data.targetType in ['restaurant', 'dish', 'driver'];
   
