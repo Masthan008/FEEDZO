@@ -103,6 +103,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Stream<List<DocumentSnapshot>> _getActiveOrdersStream(List<String> activeOrderIds) {
+    if (activeOrderIds.isEmpty) {
+      return Stream.value([]);
+    }
     return FirebaseFirestore.instance
         .collection('orders')
         .where(FieldPath.documentId, whereIn: activeOrderIds)
