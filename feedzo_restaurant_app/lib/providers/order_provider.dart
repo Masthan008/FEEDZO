@@ -148,7 +148,7 @@ class OrderProvider extends ChangeNotifier {
     try {
       final batch = FirebaseFirestore.instance.batch();
       final orderRef = FirebaseFirestore.instance.collection('orders').doc(orderId);
-      
+
       final dbData = <String, dynamic>{
         'status': OrderStatus.preparing.name,
         'prepTime': prepTime,
@@ -156,16 +156,21 @@ class OrderProvider extends ChangeNotifier {
       };
 
       // Quick logic: auto assign driver if online/available
+      debugPrint('[OrderProvider] Querying for online/available drivers for order $orderId');
       final drivers = await FirebaseFirestore.instance
           .collection('drivers')
           .where('status', whereIn: ['online', 'available'])
           .get();
 
+      debugPrint('[OrderProvider] Found ${drivers.docs.length} drivers with status online/available');
+
       if (drivers.docs.isNotEmpty) {
         final doc = drivers.docs.first;
         final driverId = doc.id;
         final data = doc.data();
-        
+
+        debugPrint('[OrderProvider] Assigning driver $driverId (${data['name']}) to order $orderId');
+
         dbData['driverId'] = driverId;
         dbData['driverName'] = data['name'] ?? 'Driver';
         dbData['driverPhone'] = data['phone'] ?? '';
@@ -176,11 +181,15 @@ class OrderProvider extends ChangeNotifier {
           'currentOrderId': orderId,
           'activeOrderIds': FieldValue.arrayUnion([orderId]),
         });
+      } else {
+        debugPrint('[OrderProvider] No online/available drivers found for order $orderId');
       }
 
       batch.update(orderRef, dbData);
       await batch.commit();
-      
+
+      debugPrint('[OrderProvider] Order $orderId accepted and batch committed');
+
     } catch (e) {
       debugPrint('[OrderProvider] Error accepting order: $e');
     }
