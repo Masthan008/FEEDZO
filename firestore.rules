@@ -123,16 +123,16 @@ service cloud.firestore {
              (request.resource.data.rating >= 1 && request.resource.data.rating <= 5);
     }
 
-    // READ ACCESS — allow drivers to read all orders (filtering happens in app)
+    // READ ACCESS — allow authenticated users to read orders
     allow read: if isAuth() && (
       isAdmin() ||
       resource.data.customerId == uid() ||
       resource.data.restaurantId == uid() ||
-      isDriver()
+      resource.data.driverId == uid()
     );
 
-    // CREATE — any authenticated customer can place an order
-    allow create: if isAuth() && isCustomer();
+    // CREATE — any authenticated user can place an order
+    allow create: if isAuth() && request.resource.data.customerId == uid();
 
     // UPDATE CONTROL - with validation for scheduling and ratings
     allow update: if isAuth() && (
