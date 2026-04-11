@@ -171,9 +171,23 @@ class _AvailableOrderList extends StatelessWidget {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (snap.hasError) {
+          debugPrint('[OrdersScreen] Stream error: ${snap.error}');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text('Error loading orders: ${snap.error}'),
+              ],
+            ),
+          );
+        }
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
+        debugPrint('[OrdersScreen] Received ${snap.data!.docs.length} orders from Firestore');
         if (snap.data!.docs.isEmpty) {
           return const Center(child: Text("No data available"));
         }
@@ -183,6 +197,8 @@ class _AvailableOrderList extends StatelessWidget {
           final rejectedBy = List<String>.from(data['rejectedBy'] as List<dynamic>? ?? []);
           return data['driverId'] == null && !rejectedBy.contains(uid);
         }).toList();
+
+        debugPrint('[OrdersScreen] Filtered to ${docs.length} unassigned orders');
 
         // Sort by createdAt descending
         docs.sort((a, b) {
@@ -487,9 +503,23 @@ class _OrderList extends StatelessWidget {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (snap.hasError) {
+          debugPrint('[OrderList] Stream error for $label: ${snap.error}');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text('Error loading $label orders: ${snap.error}'),
+              ],
+            ),
+          );
+        }
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
+        debugPrint('[OrderList] Received ${snap.data!.docs.length} $label orders from Firestore');
         if (snap.data!.docs.isEmpty) {
           return const Center(child: Text("No data available"));
         }
