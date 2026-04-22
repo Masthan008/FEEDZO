@@ -3,15 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 // ── Color System ──────────────────────────────────────────────────────────────
 class AppColors {
-  // Primary brand
-  static const primary = Color(0xFF16A34A);
-  static const primaryLight = Color(0xFF4ADE80);
-  static const primaryDark = Color(0xFF15803D);
-  static const primarySurface = Color(0xFFECFDF5);
+  // Primary brand - BiteGo Orange
+  static const primary = Color(0xFFFF6B35);
+  static const primaryLight = Color(0xFFFFB340);
+  static const primaryDark = Color(0xFFE55A2B);
+  static const primarySurface = Color(0xFFFFF8F0);
 
-  // Accent
-  static const accent = Color(0xFF0EA5E9);
-  static const accentLight = Color(0xFF7DD3FC);
+  // Accent - BiteGo Yellow
+  static const accent = Color(0xFFFFB340);
+  static const accentLight = Color(0xFFFFCC80);
 
   // Surfaces
   static const background = Color(0xFFF8F8F8);
@@ -44,9 +44,9 @@ class AppColors {
   static const deepShadow = Color(0x1F000000);
 
   // Gradients
-  static const gradientStart = Color(0xFF16A34A);
-  static const gradientEnd = Color(0xFF059669);
-  static const gradientAccent = Color(0xFF0EA5E9);
+  static const gradientStart = Color(0xFFFF6B35);
+  static const gradientEnd = Color(0xFFE55A2B);
+  static const gradientAccent = Color(0xFFFFB340);
 
   // Dark mode
   static const darkBackground = Color(0xFF0F172A);

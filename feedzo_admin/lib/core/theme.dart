@@ -3,14 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 // ── Color System ──────────────────────────────────────────────────────────────
 class AppColors {
-  // Primary brand
-  static const primary = Color(0xFF16A34A);
-  static const primaryLight = Color(0xFF4ADE80);
-  static const primaryDark = Color(0xFF15803D);
-  static const primarySurface = Color(0xFFF0FDF4);
+  // Primary brand - BiteGo Orange
+  static const primary = Color(0xFFFF6B35);
+  static const primaryLight = Color(0xFFFFB340);
+  static const primaryDark = Color(0xFFE55A2B);
+  static const primarySurface = Color(0xFFFFF8F0);
 
-  // Accent
-  static const accent = Color(0xFF0EA5E9);
+  // Accent - BiteGo Yellow
+  static const accent = Color(0xFFFFB340);
 
   // Surfaces
   static const background = Color(0xFFF8FAFB);
@@ -18,9 +18,9 @@ class AppColors {
   static const surfaceVariant = Color(0xFFF3F4F6);
 
   // Sidebar
-  static const sidebar = Color(0xFF0F1F14);
-  static const sidebarHover = Color(0xFF1A3320);
-  static const sidebarActive = Color(0xFF16A34A);
+  static const sidebar = Color(0xFF1A1A1A);
+  static const sidebarHover = Color(0xFF2D2D2D);
+  static const sidebarActive = Color(0xFFFF6B35);
 
   // Text
   static const textPrimary = Color(0xFF111827);
@@ -54,8 +54,8 @@ class AppColors {
   static const shadow = Color(0x0A000000);
 
   // Gradients
-  static const gradientStart = Color(0xFF16A34A);
-  static const gradientEnd = Color(0xFF059669);
+  static const gradientStart = Color(0xFFFF6B35);
+  static const gradientEnd = Color(0xFFE55A2B);
 }
 
 // ── Shape System ──────────────────────────────────────────────────────────────

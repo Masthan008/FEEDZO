@@ -1,5 +1,5 @@
-name: feedzo_admin
-description: "Feedzo Admin Web Panel"
+name: bitego_admin
+description: "BiteGo Admin Web Panel"
 publish_to: 'none'
 version: 1.0.0+1
 

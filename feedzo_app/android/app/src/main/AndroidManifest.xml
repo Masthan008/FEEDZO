@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <application
-        android:label="feedzo_app"
+        android:label="BiteGo"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

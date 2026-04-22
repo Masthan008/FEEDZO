@@ -1,5 +1,5 @@
-name: feedzo_restaurant_app
-description: "Feedzo Restaurant App - Manage orders, earnings, and insights."
+name: bitego_restaurant_app
+description: "BiteGo Restaurant App - Manage orders, earnings, and insights."
 publish_to: 'none'
 version: 1.0.0+1
 
