@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/location_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../../services/invoice_service.dart';
 import '../../widgets/swipeable_button.dart';
 import 'live_tracking_screen.dart';
 
@@ -120,7 +121,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
       // Start location tracking when order is picked up
       if (next == 'picked') {
-        LocationService().startLocationTracking(_uid);
+        LocationService().startLocationTracking(_uid, orderId: widget.orderId);
       }
 
       if (next == 'delivered') {
@@ -179,7 +180,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     super.initState();
     final status = widget.data['status'] as String? ?? 'preparing';
     if (status == 'picked') {
-      LocationService().startLocationTracking(_uid);
+      LocationService().startLocationTracking(_uid, orderId: widget.orderId);
     }
   }
 
@@ -272,6 +273,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   totalAmount: totalAmount,
                   paymentType: paymentType,
                   items: items,
+                ),
+                const SizedBox(height: 16),
+
+                // Invoice Download Button
+                _InvoiceButton(
+                  orderId: widget.orderId,
+                  orderData: d,
+                  driverId: _uid,
+                  driverName: d['driverName'] as String? ?? 'Driver',
                 ),
                 const SizedBox(height: 24),
 
@@ -423,6 +433,94 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _InvoiceButton extends StatelessWidget {
+  final String orderId;
+  final Map<String, dynamic> orderData;
+  final String driverId;
+  final String driverName;
+
+  const _InvoiceButton({
+    required this.orderId,
+    required this.orderData,
+    required this.driverId,
+    required this.driverName,
+  });
+
+  Future<void> _downloadInvoice(BuildContext context) async {
+    try {
+      final invoice = await InvoiceService.createInvoiceFromOrder(
+        orderData,
+        orderId,
+        driverId,
+        driverName,
+      );
+
+      // Save invoice to Firestore
+      final invoiceId = await InvoiceService.saveInvoice(invoice);
+      final savedInvoice = invoice.copyWith(id: invoiceId);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Generating invoice...'),
+            backgroundColor: AppColors.primary,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Download and print invoice
+      await InvoiceService.downloadAndPrintInvoice(savedInvoice);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invoice generated successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error generating invoice: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppShape.large,
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.subtle,
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () => _downloadInvoice(context),
+        icon: const Icon(Icons.picture_as_pdf, size: 20),
+        label: const Text(
+          'Download Invoice',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: AppShape.medium),
+        ),
+      ),
     );
   }
 }

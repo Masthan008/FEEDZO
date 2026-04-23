@@ -6,9 +6,7 @@ class OfflineService {
 
   static Future<void> initialize() async {
     // Enable offline persistence
-    await FirebaseFirestore.instance.enablePersistence(
-      const PersistenceSettings(synchronizeWrites: true),
-    );
+    await FirebaseFirestore.instance.enablePersistence();
 
     // Listen to connectivity changes
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {

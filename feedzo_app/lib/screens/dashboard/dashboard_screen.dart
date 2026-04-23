@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/order_provider.dart';
 import '../../data/models/order_model.dart';
+import '../../widgets/app_transitions.dart';
 import 'order_management_screen.dart';
 import 'menu_management_screen.dart';
 
@@ -70,7 +71,7 @@ class DashboardScreen extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.list_alt_rounded,
             label: 'Manage Orders',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderManagementScreen())),
+            onTap: () => Navigator.push(context, AppTransitions.fadeSlide(const OrderManagementScreen())),
           ),
         ),
         const SizedBox(width: 12),
@@ -78,7 +79,7 @@ class DashboardScreen extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.restaurant_menu_rounded,
             label: 'Manage Menu',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MenuManagementScreen())),
+            onTap: () => Navigator.push(context, AppTransitions.fadeSlide(const MenuManagementScreen())),
           ),
         ),
       ],

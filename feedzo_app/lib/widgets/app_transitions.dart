@@ -112,6 +112,157 @@ class AppTransitions {
   }
 }
 
+  /// Fade through transition (for replacing content within a page).
+  static PageRouteBuilder<T> fadeThrough<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (_, __, ___) => page,
+      transitionDuration: const Duration(milliseconds: 300),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+      transitionsBuilder: (_, anim, __, child) {
+        final fadeIn = Tween<double>(begin: 0, end: 1).animate(
+          CurvedAnimation(parent: anim, curve: const Interval(0.5, 1.0)),
+        );
+        final fadeOut = Tween<double>(begin: 0, end: 0).animate(anim);
+        return FadeTransition(
+          opacity: anim.status == AnimationStatus.reverse
+              ? fadeOut
+              : fadeIn,
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+/// Staggered item animation — animates list items with a cascading delay.
+/// Wrap each list item to get a slide-up + fade-in effect with staggered timing.
+class StaggeredItem extends StatefulWidget {
+  final Widget child;
+  final int index;
+  final Duration baseDelay;
+
+  const StaggeredItem({
+    super.key,
+    required this.child,
+    required this.index,
+    this.baseDelay = const Duration(milliseconds: 60),
+  });
+
+  @override
+  State<StaggeredItem> createState() => _StaggeredItemState();
+}
+
+class _StaggeredItemState extends State<StaggeredItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+
+    // Stagger delay based on index
+    Future.delayed(widget.baseDelay * widget.index, () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Animated counter — counts up from 0 to target value with smooth animation.
+class AnimatedCounter extends StatefulWidget {
+  final double target;
+  final TextStyle? style;
+  final String prefix;
+  final String suffix;
+  final int decimalPlaces;
+  final Duration duration;
+
+  const AnimatedCounter({
+    super.key,
+    required this.target,
+    this.style,
+    this.prefix = '',
+    this.suffix = '',
+    this.decimalPlaces = 0,
+    this.duration = const Duration(milliseconds: 800),
+  });
+
+  @override
+  State<AnimatedCounter> createState() => _AnimatedCounterState();
+}
+
+class _AnimatedCounterState extends State<AnimatedCounter>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: widget.duration);
+    _animation = Tween<double>(begin: 0, end: widget.target).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic),
+    );
+    _ctrl.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant AnimatedCounter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.target != widget.target) {
+      _animation = Tween<double>(
+        begin: _animation.value,
+        end: widget.target,
+      ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (_, __) => Text(
+        '${widget.prefix}${_animation.value.toStringAsFixed(widget.decimalPlaces)}${widget.suffix}',
+        style: widget.style,
+      ),
+    );
+  }
+}
+
 /// Animated button wrapper — adds scale-down feedback on press.
 class AnimatedPressable extends StatefulWidget {
   final Widget child;

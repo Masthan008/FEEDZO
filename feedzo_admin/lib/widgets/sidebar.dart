@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/admin_provider.dart';
+import '../providers/theme_provider.dart';
 
 enum AdminPage { dashboard, orders, restaurants, drivers, users, earnings, coupons, banners, refunds, incentives, recommended, aiInsights, alerts, codSettlement, settings, sendNotification, hikeCharges, driverPayouts, reviews, zones, cuisines, foodAddons, subscriptions, customerWallet, restaurantWithdrawals, languageSettings, themeSettings, emailTemplates, socialMedia, legalPages, aboutUs, chatSystem, newsletter, appVersion, landingPage, tips, verification, thirdPartyConfig, bulkImportExport, databaseCleanup, driverEarnings, cashLimit, foodReviews, reports, dispatchManagement, vehicleCoverage, businessModels, selfRegistration, subscriptionReports, campaignReports, customerAnalytics, restaurantAnalytics, driverAnalytics, inventoryManagement, loyaltyProgram, referralProgram, promotions, scheduleManagement, paymentMethods, deliveryZones, orderAnalytics, supportTickets, notifications, auditLogs, feedback, userActivity, systemHealth, apiLogs, performanceMonitor }
 
@@ -33,7 +34,7 @@ class Sidebar extends StatelessWidget {
               children: [
                 Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 20)),
                 const SizedBox(width: 10),
-                const Text('Feedzo', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('BiteGo', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 6),
                 Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(4)), child: const Text('Admin', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold))),
               ],
@@ -159,6 +160,52 @@ class Sidebar extends StatelessWidget {
                   _Item(icon: Icons.notifications_active_rounded, label: 'Send Notification', page: AdminPage.sendNotification, current: current, onTap: onSelect),
                   const SizedBox(height: 16),
                 ],
+              ),
+            ),
+          ),
+          const Divider(color: Color(0xFF1F2937), height: 1),
+          // Dark Mode Toggle
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Consumer<ThemeProvider>(
+              builder: (_, theme, __) => MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => theme.toggleTheme(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.sidebarHover,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          theme.isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                          color: const Color(0xFF9CA3AF),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            theme.isDark ? 'Dark Mode' : 'Light Mode',
+                            style: const TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Switch(
+                          value: theme.isDark,
+                          onChanged: (_) => theme.toggleTheme(),
+                          activeColor: AppColors.primary,
+                          inactiveThumbColor: const Color(0xFF9CA3AF),
+                          inactiveTrackColor: const Color(0xFF4B5563),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

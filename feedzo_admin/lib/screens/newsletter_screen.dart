@@ -16,11 +16,15 @@ class NewsletterScreen extends StatefulWidget {
 class _NewsletterScreenState extends State<NewsletterScreen> {
   final _emailController = TextEditingController();
   final _nameController = TextEditingController();
+  final _subjectController = TextEditingController();
+  final _contentController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
     _nameController.dispose();
+    _subjectController.dispose();
+    _contentController.dispose();
     super.dispose();
   }
 
@@ -103,11 +107,117 @@ class _NewsletterScreenState extends State<NewsletterScreen> {
     );
   }
 
+  void _showSendNewsletterDialog(List<NewsletterSubscriberModel> subscribers) {
+    _subjectController.clear();
+    _contentController.clear();
+
+    final activeSubscribers = subscribers.where((s) => s.isActive).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Send Newsletter to ${activeSubscribers.length} Subscribers'),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _subjectController,
+                decoration: const InputDecoration(
+                  labelText: 'Subject *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _contentController,
+                maxLines: 8,
+                decoration: const InputDecoration(
+                  labelText: 'Content *',
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter your newsletter content here...',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This will send to ${activeSubscribers.length} active subscribers',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_subjectController.text.isEmpty || _contentController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Subject and content are required')),
+                );
+                return;
+              }
+
+              try {
+                await NewsletterService.sendNewsletter(
+                  subject: _subjectController.text.trim(),
+                  content: _contentController.text.trim(),
+                  subscribers: activeSubscribers,
+                );
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Newsletter sent to ${activeSubscribers.length} subscribers'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error sending newsletter: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const TopBar(title: 'Newsletter Subscriptions', subtitle: 'Manage email subscribers'),
+        TopBar(
+          title: 'Newsletter Subscriptions',
+          subtitle: 'Manage email subscribers',
+          actions: [
+            ElevatedButton.icon(
+              onPressed: () async {
+                final subscribers = await NewsletterService.getAllSubscribers();
+                if (mounted) {
+                  _showSendNewsletterDialog(subscribers);
+                }
+              },
+              icon: const Icon(Icons.send, size: 18),
+              label: const Text('Send Newsletter'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
         Expanded(
           child: StreamBuilder<List<NewsletterSubscriberModel>>(
             stream: NewsletterService.watchAllSubscribers(),

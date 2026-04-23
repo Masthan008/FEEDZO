@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../providers/restaurant_provider.dart';
+import 'package:provider/provider.dart';
 
 class AdvancedSearchScreen extends StatefulWidget {
   const AdvancedSearchScreen({super.key});
@@ -298,6 +300,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   }
 
   void _applyFilters() {
+    final restaurantProvider = context.read<RestaurantProvider>();
     final filters = {
       'priceMin': _priceRange.start,
       'priceMax': _priceRange.end,
@@ -310,6 +313,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
       'openNow': _showOpenOnly,
       'vegOnly': _vegOnly,
     };
-    Navigator.pop(context, filters);
+    restaurantProvider.setAdvancedFilters(filters);
+    Navigator.pop(context);
   }
 }

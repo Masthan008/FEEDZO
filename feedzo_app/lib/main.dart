@@ -20,6 +20,7 @@ import 'screens/orders/order_tracking_screen.dart';
 
 import 'package:flutter/foundation.dart';
 import 'services/onesignal_service.dart';
+import 'services/offline_service.dart';
 
 /// Global navigator key — used by OneSignal for deep-link navigation.
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -29,12 +30,13 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (!kIsWeb) {
     await OneSignalService.init();
+    await OfflineService.initialize();
   }
-  runApp(const FeedzoApp());
+  runApp(const BiteGoApp());
 }
 
-class FeedzoApp extends StatelessWidget {
-  const FeedzoApp({super.key});
+class BiteGoApp extends StatelessWidget {
+  const BiteGoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +52,7 @@ class FeedzoApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (_, themeProvider, __) => ResponsiveBuilder(
           builder: (context, info) => MaterialApp(
-            title: 'Feedzo',
+            title: 'BiteGo',
             debugShowCheckedModeBanner: false,
             navigatorKey: navigatorKey,
             theme: AppTheme.light,

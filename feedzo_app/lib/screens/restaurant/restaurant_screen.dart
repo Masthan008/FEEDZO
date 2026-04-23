@@ -8,6 +8,7 @@ import '../../providers/restaurant_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../data/models/restaurant_model.dart';
 import '../../services/firestore_service.dart';
+import '../../widgets/app_transitions.dart';
 import '../../widgets/quantity_control.dart';
 import '../cart/cart_screen.dart';
 
@@ -93,8 +94,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       cart: cart,
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const CartScreen()),
+                        AppTransitions.fadeSlide(const CartScreen()),
                       ),
                     ),
                 ),

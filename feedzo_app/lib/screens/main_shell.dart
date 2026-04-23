@@ -36,12 +36,16 @@ class _MainShellState extends State<MainShell>
       curve: Curves.easeOutBack,
     );
     _controller.forward();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = context.read<AuthProvider>().user;
-      if (user != null) {
-        context.read<OrderProvider>().init(user.id);
-      }
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final user = context.watch<AuthProvider>().user;
+    if (user != null) {
+      debugPrint('[MainShell] Initializing OrderProvider with customerId: ${user.id}');
+      context.read<OrderProvider>().init(user.id);
+    }
   }
 
   @override

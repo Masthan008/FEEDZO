@@ -6,6 +6,7 @@ class ChatMessageModel {
   final String senderName;
   final String senderType; // admin, restaurant, driver, customer
   final String recipientId;
+  final String recipientName;
   final String recipientType;
   final String message;
   final String? imageUrl;
@@ -18,6 +19,7 @@ class ChatMessageModel {
     required this.senderName,
     required this.senderType,
     required this.recipientId,
+    required this.recipientName,
     required this.recipientType,
     required this.message,
     this.imageUrl,
@@ -33,6 +35,7 @@ class ChatMessageModel {
       senderName: data['senderName'] ?? '',
       senderType: data['senderType'] ?? '',
       recipientId: data['recipientId'] ?? '',
+      recipientName: data['recipientName'] ?? '',
       recipientType: data['recipientType'] ?? '',
       message: data['message'] ?? '',
       imageUrl: data['imageUrl'],
@@ -47,6 +50,7 @@ class ChatMessageModel {
       'senderName': senderName,
       'senderType': senderType,
       'recipientId': recipientId,
+      'recipientName': recipientName,
       'recipientType': recipientType,
       'message': message,
       'imageUrl': imageUrl,

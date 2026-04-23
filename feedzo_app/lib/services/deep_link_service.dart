@@ -56,6 +56,28 @@ class DeepLinkService {
     return dynamicLink.shortUrl.toString();
   }
 
+  static Future<String> createGroupOrderDeepLink(String groupOrderId) async {
+    final dynamicLinkParams = DynamicLinkParameters(
+      link: Uri.parse('https://feedzo.app/group-order/$groupOrderId'),
+      uriPrefix: 'https://feedzo.page.link',
+      androidParameters: const AndroidParameters(
+        packageName: 'com.example.feedzo_app',
+        minimumVersion: 1,
+      ),
+      iosParameters: const IOSParameters(
+        bundleId: 'com.example.feedzo_app',
+        minimumVersion: '1',
+      ),
+      socialMetaTagParameters: SocialMetaTagParameters(
+        title: 'Join my group order on Feedzo!',
+        description: 'Add your items to our group order',
+      ),
+    );
+
+    final dynamicLink = await FirebaseDynamicLinks.instance.buildShortLink(dynamicLinkParams);
+    return dynamicLink.shortUrl.toString();
+  }
+
   static Future<void> handleDynamicLinks(BuildContext context) async {
     FirebaseDynamicLinks.instance.onLink.listen((dynamicLinkData) {
       final Uri deepLink = dynamicLinkData.link;
@@ -83,6 +105,9 @@ class DeepLinkService {
     } else if (path.startsWith('/referral/')) {
       final referralCode = path.split('/').last;
       Navigator.pushNamed(context, '/referral', arguments: referralCode);
+    } else if (path.startsWith('/group-order/')) {
+      final groupOrderId = path.split('/').last;
+      Navigator.pushNamed(context, '/group-order', arguments: groupOrderId);
     }
   }
 }

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme.dart';
 import '../../models/order_model.dart';
+import '../../models/invoice_model.dart';
 import '../../providers/order_provider.dart';
+import '../../services/invoice_service.dart';
 import '../../widgets/order_status_badge.dart';
 import 'driver_tracking_screen.dart';
 
@@ -15,11 +18,63 @@ class OrderDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<OrderProvider>();
     final order = provider.orders.firstWhere((o) => o.id == orderId);
+    final restaurantId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    Future<void> _downloadInvoice() async {
+      try {
+        final invoice = await InvoiceService.createInvoiceFromOrder(
+          order.toMap(),
+          order.id,
+          order.driverId ?? '',
+          order.driverName ?? 'Driver',
+        );
+
+        // Save invoice to Firestore
+        final invoiceId = await InvoiceService.saveInvoice(invoice);
+        final savedInvoice = invoice.copyWith(id: invoiceId);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Generating invoice...'),
+              backgroundColor: AppColors.primary,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Download and print invoice
+        await InvoiceService.downloadAndPrintInvoice(savedInvoice);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invoice generated successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error generating invoice: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${order.id.length > 8 ? order.id.substring(order.id.length - 8).toUpperCase() : order.id.toUpperCase()}'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _downloadInvoice,
+            tooltip: 'Download Invoice',
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: OrderStatusBadge(status: order.status),

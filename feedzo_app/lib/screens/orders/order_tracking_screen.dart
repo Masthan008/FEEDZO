@@ -4,18 +4,28 @@ import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import '../../data/models/order_model.dart';
 import '../../services/firestore_service.dart';
+import '../../services/loyalty_service.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_transitions.dart';
 import 'order_chat_screen.dart';
 import 'rate_order_screen.dart';
 
-class OrderTrackingScreen extends StatelessWidget {
+class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
   const OrderTrackingScreen({super.key, required this.orderId});
 
   @override
+  State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
+}
+
+class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
+  OrderStatus? _lastStatus;
+  bool _pointsCredited = false;
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<Order>(
-      stream: FirestoreService.watchOrder(orderId),
+      stream: FirestoreService.watchOrder(widget.orderId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
@@ -48,6 +58,19 @@ class OrderTrackingScreen extends StatelessWidget {
           );
         }
         final order = snapshot.data!;
+
+        // Credit loyalty points when order is delivered
+        if (order.status == OrderStatus.delivered &&
+            _lastStatus != OrderStatus.delivered &&
+            !_pointsCredited) {
+          _pointsCredited = true;
+          LoyaltyService.creditPointsOnOrderDelivery(
+            customerId: order.customerId,
+            orderId: order.id,
+            orderAmount: order.totalAmount,
+          );
+        }
+        _lastStatus = order.status;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -143,8 +166,7 @@ class OrderTrackingScreen extends StatelessWidget {
                           HapticFeedback.mediumImpact();
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => OrderChatScreen(
+                            AppTransitions.slideUp(OrderChatScreen(
                                 orderId: order.id,
                                 currentUserId: order.customerId,
                                 currentUserRole: 'customer',
@@ -183,8 +205,7 @@ class OrderTrackingScreen extends StatelessWidget {
                             HapticFeedback.mediumImpact();
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => RateOrderScreen(
+                              AppTransitions.fadeSlide(RateOrderScreen(
                                   orderId: order.id,
                                   restaurantId: order.restaurantId,
                                   restaurantName: order.restaurantName,

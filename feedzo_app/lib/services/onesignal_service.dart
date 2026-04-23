@@ -1,6 +1,7 @@
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import '../main.dart';
 import '../screens/orders/order_tracking_screen.dart';
+import '../widgets/app_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
@@ -28,9 +29,7 @@ class OneSignalService {
         case 'order_update':
           if (orderId != null) {
             navigator.push(
-              MaterialPageRoute(
-                builder: (_) => OrderTrackingScreen(orderId: orderId),
-              ),
+              AppTransitions.fadeSlide(OrderTrackingScreen(orderId: orderId)),
             );
           }
           break;

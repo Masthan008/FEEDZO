@@ -31,6 +31,31 @@ class HikeChargesService {
     });
   }
 
+  /// Save restaurant hike charge override
+  static Future<void> saveRestaurantOverride({
+    required String restaurantId,
+    required bool useGlobalSettings,
+    double? customPackagingCharges,
+    double? customDeliveryCharges,
+    double? customHikeMultiplier,
+    double? customCommissionPlus,
+  }) async {
+    await _restaurantOverrides.doc(restaurantId).set({
+      'restaurantId': restaurantId,
+      'useGlobalSettings': useGlobalSettings,
+      'customPackagingCharges': customPackagingCharges,
+      'customDeliveryCharges': customDeliveryCharges,
+      'customHikeMultiplier': customHikeMultiplier,
+      'customCommissionPlus': customCommissionPlus,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Delete restaurant override (revert to global settings)
+  static Future<void> deleteRestaurantOverride(String restaurantId) async {
+    await _restaurantOverrides.doc(restaurantId).delete();
+  }
+
   /// Get effective hike charges for a restaurant
   static Stream<EffectiveHikeCharges> watchEffectiveCharges(String restaurantId) {
     return _hikeCharges.doc(_globalConfigId).snapshots().asyncMap((globalSnap) async {

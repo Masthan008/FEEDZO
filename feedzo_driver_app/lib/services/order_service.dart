@@ -16,6 +16,14 @@ class OrderService {
         .snapshots();
   }
 
+  /// Stream available orders (unassigned orders that drivers can accept)
+  Stream<QuerySnapshot> streamAvailableOrders() {
+    return _db.collection('orders')
+        .where('status', whereIn: ['placed', 'preparing', 'ready'])
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
   /// Stream active order (preparing / out_for_delivery)
   Stream<QuerySnapshot> streamActiveOrder() {
     if (_driverId == null) return const Stream.empty();

@@ -9,9 +9,14 @@ class LocationService {
 
   static final _db = FirebaseFirestore.instance;
   StreamSubscription<Position>? _positionSubscription;
+  String? _currentOrderId;
+  String? _currentDriverId;
 
   /// Start listening to location updates and sync to Firestore
-  Future<void> startLocationTracking(String driverId) async {
+  Future<void> startLocationTracking(String driverId, {String? orderId}) async {
+    _currentDriverId = driverId;
+    _currentOrderId = orderId;
+
     // 1. Check permissions
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
@@ -34,7 +39,7 @@ class LocationService {
     _positionSubscription =
         Geolocator.getPositionStream(locationSettings: locationSettings).listen(
           (Position position) {
-            _updateDriverLocation(driverId, position);
+            _updateDriverLocation(driverId, position, orderId);
           },
         );
   }
@@ -43,15 +48,33 @@ class LocationService {
   void stopLocationTracking() {
     _positionSubscription?.cancel();
     _positionSubscription = null;
+    _currentOrderId = null;
+    _currentDriverId = null;
   }
 
   /// Update Firestore with current location
-  Future<void> _updateDriverLocation(String driverId, Position position) async {
+  Future<void> _updateDriverLocation(String driverId, Position position, String? orderId) async {
     try {
+      // Update driver document with location
       await _db.collection('drivers').doc(driverId).update({
         'location': {'lat': position.latitude, 'lng': position.longitude},
         'lastUpdated': FieldValue.serverTimestamp(),
       });
+
+      // Also update order tracking subcollection if orderId is provided
+      if (orderId != null) {
+        await _db
+            .collection('orders')
+            .doc(orderId)
+            .collection('tracking')
+            .doc('current')
+            .set({
+          'orderId': orderId,
+          'driverId': driverId,
+          'driverLocation': GeoPoint(position.latitude, position.longitude),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
     } catch (e) {
       print("Error updating driver location: $e");
     }

@@ -15,6 +15,16 @@ class RestaurantProvider extends ChangeNotifier {
   String _sortBy = 'default'; // 'default', 'rating', 'deliveryTime', 'deliveryFee'
   StreamSubscription? _sub;
 
+  // Advanced filters
+  List<String> _selectedCuisines = [];
+  List<String> _selectedDietary = [];
+  List<String> _selectedOffers = [];
+  double _priceMin = 0;
+  double _priceMax = 2000;
+  double _deliveryMin = 0;
+  double _deliveryMax = 20;
+  bool _showOpenOnly = false;
+
   List<Restaurant> get restaurants => _filtered;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -24,6 +34,14 @@ class RestaurantProvider extends ChangeNotifier {
   bool get fastDeliveryOnly => _fastDeliveryOnly;
   double get minRating => _minRating;
   String get sortBy => _sortBy;
+  List<String> get selectedCuisines => _selectedCuisines;
+  List<String> get selectedDietary => _selectedDietary;
+  List<String> get selectedOffers => _selectedOffers;
+  double get priceMin => _priceMin;
+  double get priceMax => _priceMax;
+  double get deliveryMin => _deliveryMin;
+  double get deliveryMax => _deliveryMax;
+  bool get showOpenOnly => _showOpenOnly;
 
   RestaurantProvider() {
     loadRestaurants();
@@ -61,7 +79,21 @@ class RestaurantProvider extends ChangeNotifier {
       final matchesRating = r.rating >= _minRating;
       final matchesFreeDelivery = !_freeDeliveryOnly || r.deliveryFee == 0;
       final matchesFastDelivery = !_fastDeliveryOnly || r.deliveryTime <= 30;
-      return matchesSearch && matchesVeg && matchesRating && matchesFreeDelivery && matchesFastDelivery;
+      
+      // Advanced filters
+      final matchesCuisine = _selectedCuisines.isEmpty ||
+          _selectedCuisines.contains(r.cuisine);
+      final matchesDietary = _selectedDietary.isEmpty ||
+          _selectedDietary.every((diet) => r.dietaryOptions.contains(diet));
+      final matchesOffers = _selectedOffers.isEmpty ||
+          _selectedOffers.any((offer) => r.offers.contains(offer));
+      final matchesPriceRange = r.averagePrice >= _priceMin && r.averagePrice <= _priceMax;
+      final matchesDeliveryRange = r.deliveryTime >= _deliveryMin && r.deliveryTime <= _deliveryMax;
+      final matchesOpenNow = !_showOpenOnly || r.isOpen;
+
+      return matchesSearch && matchesVeg && matchesRating && matchesFreeDelivery &&
+          matchesFastDelivery && matchesCuisine && matchesDietary && matchesOffers &&
+          matchesPriceRange && matchesDeliveryRange && matchesOpenNow;
     }).toList();
 
     // Apply sorting
@@ -126,6 +158,48 @@ class RestaurantProvider extends ChangeNotifier {
     _minRating = 0;
     _searchQuery = '';
     _sortBy = 'default';
+    _selectedCuisines.clear();
+    _selectedDietary.clear();
+    _selectedOffers.clear();
+    _priceMin = 0;
+    _priceMax = 2000;
+    _deliveryMin = 0;
+    _deliveryMax = 20;
+    _showOpenOnly = false;
+    notifyListeners();
+  }
+
+  void setAdvancedFilters(Map<String, dynamic> filters) {
+    if (filters.containsKey('cuisines')) {
+      _selectedCuisines = List<String>.from(filters['cuisines']);
+    }
+    if (filters.containsKey('dietary')) {
+      _selectedDietary = List<String>.from(filters['dietary']);
+    }
+    if (filters.containsKey('offers')) {
+      _selectedOffers = List<String>.from(filters['offers']);
+    }
+    if (filters.containsKey('priceMin')) {
+      _priceMin = filters['priceMin'];
+    }
+    if (filters.containsKey('priceMax')) {
+      _priceMax = filters['priceMax'];
+    }
+    if (filters.containsKey('deliveryMin')) {
+      _deliveryMin = filters['deliveryMin'];
+    }
+    if (filters.containsKey('deliveryMax')) {
+      _deliveryMax = filters['deliveryMax'];
+    }
+    if (filters.containsKey('minRating')) {
+      _minRating = filters['minRating'];
+    }
+    if (filters.containsKey('openNow')) {
+      _showOpenOnly = filters['openNow'];
+    }
+    if (filters.containsKey('vegOnly')) {
+      _vegOnly = filters['vegOnly'];
+    }
     notifyListeners();
   }
 

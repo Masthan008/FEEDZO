@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../models/tracking_model.dart';
 import '../../services/tracking_service.dart';
+import '../../services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
 
 class DriverOrderTrackingMapScreen extends StatefulWidget {
@@ -17,46 +18,25 @@ class _DriverOrderTrackingMapScreenState extends State<DriverOrderTrackingMapScr
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   TrackingModel? _trackingData;
-  bool _isTracking = false;
 
   @override
   void initState() {
     super.initState();
-    _startLocationTracking();
+    _initLocationTracking();
+  }
+
+  Future<void> _initLocationTracking() async {
+    final authProvider = context.read<AuthProvider>();
+    final driverId = authProvider.driverId;
+    if (driverId != null) {
+      LocationService().startLocationTracking(driverId, orderId: widget.orderId);
+    }
   }
 
   @override
   void dispose() {
-    _isTracking = false;
+    LocationService().stopLocationTracking();
     super.dispose();
-  }
-
-  Future<void> _startLocationTracking() async {
-    _isTracking = true;
-    while (_isTracking) {
-      await Future.delayed(const Duration(seconds: 10));
-      if (_isTracking) {
-        await _updateCurrentLocation();
-      }
-    }
-  }
-
-  Future<void> _updateCurrentLocation() async {
-    try {
-      final position = await Geolocator.getCurrentPosition();
-      final authProvider = context.read<AuthProvider>();
-      final driverId = authProvider.driverId;
-      if (driverId == null) return;
-
-      await TrackingService.updateDriverLocation(
-        orderId: widget.orderId,
-        driverId: driverId,
-        location: GeoPoint(position.latitude, position.longitude),
-        status: _trackingData?.status ?? 'assigned',
-      );
-    } catch (e) {
-      print('Error updating location: $e');
-    }
   }
 
   @override

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../data/models/order_model.dart';
+import '../../widgets/app_transitions.dart';
 import 'order_tracking_screen.dart';
 import 'rate_order_screen.dart';
 
@@ -190,9 +191,7 @@ class _OrderCard extends StatelessWidget {
         HapticFeedback.lightImpact();
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => OrderTrackingScreen(orderId: order.id),
-          ),
+          AppTransitions.fadeSlide(OrderTrackingScreen(orderId: order.id)),
         );
       },
       child: Container(
@@ -301,8 +300,7 @@ class _OrderCard extends StatelessWidget {
                         HapticFeedback.mediumImpact();
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => RateOrderScreen(
+                          AppTransitions.fadeSlide(RateOrderScreen(
                               orderId: order.id,
                               restaurantId: order.restaurantId,
                               restaurantName: order.restaurantName,
@@ -349,10 +347,8 @@ class _OrderCard extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              OrderTrackingScreen(orderId: order.id),
-                        ),
+                        AppTransitions.fadeSlide(
+                            OrderTrackingScreen(orderId: order.id)),
                       );
                     },
                     style: TextButton.styleFrom(

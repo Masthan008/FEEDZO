@@ -89,6 +89,10 @@ class _HikeChargesScreenState extends State<HikeChargesScreen> {
 
                 // Example Calculation
                 _buildExampleCard(values),
+                const SizedBox(height: 16),
+
+                // Custom Settings Section
+                _buildCustomSettingsCard(values),
               ],
             ),
           );
@@ -683,6 +687,200 @@ class _HikeChargesScreenState extends State<HikeChargesScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCustomSettingsCard(Map<String, dynamic> values) {
+    final hasCustom = values['hasCustomSettings'] as bool;
+    final auth = context.read<AuthProvider>();
+    final restaurantId = auth.user?.uid ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: hasCustom
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.textMuted.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.settings_rounded,
+                  color: hasCustom ? AppColors.success : AppColors.textMuted,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Custom Settings',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasCustom ? 'Using custom charges' : 'Using global settings',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: hasCustom ? AppColors.success : AppColors.textSecondary,
+                        fontWeight: hasCustom ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: hasCustom,
+                onChanged: (value) async {
+                  if (!value) {
+                    // Revert to global settings
+                    await context.read<HikeChargesProvider>().deleteOverride(restaurantId);
+                  } else {
+                    // Show custom settings dialog
+                    _showCustomSettingsDialog(values, restaurantId);
+                  }
+                },
+                activeColor: AppColors.primary,
+              ),
+            ],
+          ),
+          if (hasCustom) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => _showCustomSettingsDialog(values, restaurantId),
+              icon: const Icon(Icons.edit_rounded, size: 18),
+              label: const Text('Edit Custom Settings'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showCustomSettingsDialog(Map<String, dynamic> values, String restaurantId) {
+    final packagingController = TextEditingController(
+      text: values['packagingCharges']?.toString() ?? '10',
+    );
+    final deliveryController = TextEditingController(
+      text: values['deliveryCharges']?.toString() ?? '20',
+    );
+    final hikeController = TextEditingController(
+      text: values['hikeMultiplier']?.toString() ?? '10',
+    );
+    final commissionController = TextEditingController(
+      text: values['commissionPlus']?.toString() ?? '2',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Custom Hike Charges'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: packagingController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Packaging Charges (₹)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: deliveryController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Delivery Charges (₹)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: hikeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Hike Multiplier (%)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: commissionController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Commission Plus (%)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await context.read<HikeChargesProvider>().saveOverride(
+                  restaurantId: restaurantId,
+                  useGlobalSettings: false,
+                  customPackagingCharges: double.tryParse(packagingController.text),
+                  customDeliveryCharges: double.tryParse(deliveryController.text),
+                  customHikeMultiplier: double.tryParse(hikeController.text),
+                  customCommissionPlus: double.tryParse(commissionController.text),
+                );
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Custom settings saved!')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error saving settings: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
   }
 }

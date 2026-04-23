@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/phone_auth_service.dart';
+import '../../widgets/app_transitions.dart';
 import 'otp_verification_screen.dart';
 import 'login_screen.dart';
 
@@ -67,8 +68,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         setState(() => _loading = false);
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => OtpVerificationScreen(
+          AppTransitions.fadeSlide(OtpVerificationScreen(
               phoneNumber: formattedPhone,
               verificationId: verificationId,
               role: widget.role,
@@ -388,7 +388,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 child: GestureDetector(
                   onTap: () => Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    AppTransitions.fadeSlide(const LoginScreen()),
                   ),
                   child: const Text(
                     'Use email instead',

@@ -204,6 +204,50 @@ class _RefundsScreenState extends State<RefundsScreen> {
   }
 
   Future<void> _updateStatus(String docId, String status) async {
+    final refundDoc = await _refunds.doc(docId).get();
+    if (!refundDoc.exists) return;
+
+    final refundData = refundDoc.data() as Map<String, dynamic>;
+    final customerId = refundData['customerId'] as String?;
+    final amount = (refundData['amount'] as num?)?.toDouble() ?? 0;
+    final orderId = refundData['orderId'] as String?;
+
+    if (status == 'approved' && customerId != null) {
+      // Credit customer wallet
+      final walletRef = FirebaseFirestore.instance.collection('customerWallets').doc(customerId);
+      await walletRef.set({
+        'balance': FieldValue.increment(amount),
+        'totalRefunds': FieldValue.increment(amount),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Create transaction record
+      await walletRef.collection('transactions').add({
+        'type': 'refund',
+        'amount': amount,
+        'description': 'Refund for order #${orderId ?? docId}',
+        'refundId': docId,
+        'orderId': orderId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update order status if orderId exists
+      if (orderId != null) {
+        await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+          'refundStatus': 'approved',
+          'refundAmount': amount,
+          'refundedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } else if (status == 'rejected' && orderId != null) {
+      // Update order status to reflect rejected refund
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+        'refundStatus': 'rejected',
+        'rejectedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Update refund status
     await _refunds.doc(docId).update({
       'status': status,
       'processedAt': FieldValue.serverTimestamp(),

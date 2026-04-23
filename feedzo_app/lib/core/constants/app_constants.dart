@@ -1,5 +1,5 @@
 class AppConstants {
-  static const appName = 'Feedzo';
+  static const appName = 'BiteGo';
   static const defaultLocation = 'Koramangala, Bangalore';
 
   // Animation durations

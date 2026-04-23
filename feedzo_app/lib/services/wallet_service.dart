@@ -3,7 +3,7 @@ import '../models/wallet_model.dart';
 
 class WalletService {
   static final _db = FirebaseFirestore.instance;
-  static final CollectionReference _wallets = _db.collection('customerWallet');
+  static final CollectionReference _wallets = _db.collection('customerWallets');
 
   static Stream<WalletModel?> watchWallet(String userId) {
     return _wallets.where('userId', isEqualTo: userId).limit(1).snapshots().map((snap) {

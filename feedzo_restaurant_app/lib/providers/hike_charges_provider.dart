@@ -130,6 +130,30 @@ class HikeChargesProvider extends ChangeNotifier {
     };
   }
 
+  /// Save restaurant override
+  Future<void> saveOverride({
+    required String restaurantId,
+    required bool useGlobalSettings,
+    double? customPackagingCharges,
+    double? customDeliveryCharges,
+    double? customHikeMultiplier,
+    double? customCommissionPlus,
+  }) async {
+    await HikeChargesService.saveRestaurantOverride(
+      restaurantId: restaurantId,
+      useGlobalSettings: useGlobalSettings,
+      customPackagingCharges: customPackagingCharges,
+      customDeliveryCharges: customDeliveryCharges,
+      customHikeMultiplier: customHikeMultiplier,
+      customCommissionPlus: customCommissionPlus,
+    );
+  }
+
+  /// Delete restaurant override
+  Future<void> deleteOverride(String restaurantId) async {
+    await HikeChargesService.deleteRestaurantOverride(restaurantId);
+  }
+
   void dispose() {
     _globalSubscription?.cancel();
     _effectiveSubscription?.cancel();

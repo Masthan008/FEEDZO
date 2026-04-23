@@ -40,6 +40,11 @@ class CartProvider extends ChangeNotifier {
   double get discount => _discount;
   DateTime? get scheduledFor => _scheduledFor;
 
+  void setScheduledFor(DateTime? dateTime) {
+    _scheduledFor = dateTime;
+    notifyListeners();
+  }
+
   // Hike charges getters
   double get packagingCharge => _packagingCharge;
   double get deliveryCharge => _deliveryCharge;

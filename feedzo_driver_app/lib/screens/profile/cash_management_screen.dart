@@ -267,12 +267,25 @@ class _CashManagementScreenState extends State<CashManagementScreen> {
             onPressed: () async {
               final submitAmount = double.tryParse(amountController.text);
               if (submitAmount != null && submitAmount > 0) {
-                await SettlementService.submitCash(
-                  driverId,
-                  submitAmount,
-                  notesController.text.isEmpty ? 'Manual submission' : notesController.text,
-                );
-                if (mounted) Navigator.pop(context);
+                try {
+                  await SettlementService.submitCash(
+                    driverId,
+                    submitAmount,
+                    notesController.text.isEmpty ? 'Manual submission' : notesController.text,
+                  );
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Cash submitted successfully!')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error submitting cash: $e')),
+                    );
+                  }
+                }
               }
             },
             child: const Text('Submit'),

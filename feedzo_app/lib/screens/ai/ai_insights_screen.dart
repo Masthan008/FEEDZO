@@ -1,14 +1,82 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../../data/dummy/dummy_data.dart';
+import '../../services/ai_insights_service.dart';
 
-class AIInsightsScreen extends StatelessWidget {
+class AIInsightsScreen extends StatefulWidget {
   const AIInsightsScreen({super.key});
 
   @override
+  State<AIInsightsScreen> createState() => _AIInsightsScreenState();
+}
+
+class _AIInsightsScreenState extends State<AIInsightsScreen> {
+  Map<String, dynamic> _insights = {};
+  List<Map<String, dynamic>> _recommendations = [];
+  Map<String, dynamic> _spendingInsights = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInsights();
+  }
+
+  Future<void> _loadInsights() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final insights = await AIInsightsService.getCustomerInsights();
+    final recommendations = await AIInsightsService.getFoodRecommendations();
+    final spendingInsights = await AIInsightsService.getSpendingInsights();
+
+    if (mounted) {
+      setState(() {
+        _insights = insights;
+        _recommendations = recommendations;
+        _spendingInsights = spendingInsights;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final aiInsights = DummyData.aiInsights;
-    final reviewInsights = DummyData.reviewInsights;
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      'AI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text('AI Insights'),
+            ],
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -49,7 +117,7 @@ class AIInsightsScreen extends StatelessWidget {
             _buildSummaryBanner(),
             const SizedBox(height: 24),
             const Text(
-              'Performance Insights',
+              'Your Stats',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -57,10 +125,10 @@ class AIInsightsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...aiInsights.map((insight) => _InsightCard(insight: insight)),
+            _buildStatsGrid(),
             const SizedBox(height: 24),
             const Text(
-              'Customer Feedback Analysis',
+              'Personalized Recommendations',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -68,10 +136,10 @@ class AIInsightsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...reviewInsights.map((data) => _ReviewInsightCard(data: data)),
+            _buildRecommendations(),
             const SizedBox(height: 24),
             const Text(
-              'Menu Suggestions',
+              'Spending Insights',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -79,7 +147,7 @@ class AIInsightsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _buildMenuSuggestions(),
+            _buildSpendingInsights(),
           ],
         ),
       ),
@@ -87,6 +155,10 @@ class AIInsightsScreen extends StatelessWidget {
   }
 
   Widget _buildSummaryBanner() {
+    final totalOrders = _insights['totalOrders'] ?? 0;
+    final favoriteCuisine = _insights['favoriteCuisine'] ?? 'Indian';
+    final loyaltyTier = _insights['loyaltyTier'] ?? 'Bronze';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -115,18 +187,18 @@ class AIInsightsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Your business is performing well this week. Orders are up 18%, and customer satisfaction remains high at 4.5/5.',
-            style: TextStyle(color: Colors.white, fontSize: 15, height: 1.5),
+          Text(
+            'You\'ve placed $totalOrders orders and your favorite cuisine is $favoriteCuisine. You\'re a $loyaltyTier member!',
+            style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5),
           ),
           const SizedBox(height: 16),
-          const Row(
+          Row(
             children: [
-              _StatBadge(label: 'Orders', value: '+18%', positive: true),
-              SizedBox(width: 12),
-              _StatBadge(label: 'Revenue', value: '+12%', positive: true),
-              SizedBox(width: 12),
-              _StatBadge(label: 'Rating', value: '4.5', positive: true),
+              _StatBadge(label: 'Orders', value: '$totalOrders', positive: true),
+              const SizedBox(width: 12),
+              _StatBadge(label: 'Tier', value: loyaltyTier, positive: true),
+              const SizedBox(width: 12),
+              _StatBadge(label: 'Cuisine', value: favoriteCuisine, positive: true),
             ],
           ),
         ],
@@ -134,29 +206,48 @@ class AIInsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuSuggestions() {
-    final suggestions = [
-      {
-        'name': 'Classic Smash Burger',
-        'reason': 'Top seller — 142 orders this month',
-        'icon': Icons.lunch_dining_rounded,
-      },
-      {
-        'name': 'Loaded Fries Combo',
-        'reason': 'High satisfaction + upsell potential',
-        'icon': Icons.fastfood_rounded,
-      },
-      {
-        'name': 'Seasonal Special',
-        'reason': 'Trending in your area right now',
-        'icon': Icons.star_rounded,
-      },
-    ];
+  Widget _buildStatsGrid() {
+    final totalSpent = _insights['totalSpent'] ?? 0.0;
+    final avgOrderValue = _insights['avgOrderValue'] ?? 0.0;
+    final loyaltyPoints = _insights['loyaltyPoints'] ?? 0;
 
     return Column(
-      children: suggestions
+      children: [
+        _StatCard(
+          icon: Icons.account_balance_wallet_rounded,
+          label: 'Total Spent',
+          value: '₹${totalSpent.toStringAsFixed(0)}',
+          color: 0xFF16A34A,
+        ),
+        const SizedBox(height: 12),
+        _StatCard(
+          icon: Icons.receipt_long_rounded,
+          label: 'Avg Order Value',
+          value: '₹${avgOrderValue.toStringAsFixed(0)}',
+          color: 0xFF3B82F6,
+        ),
+        const SizedBox(height: 12),
+        _StatCard(
+          icon: Icons.stars_rounded,
+          label: 'Loyalty Points',
+          value: '$loyaltyPoints pts',
+          color: 0xFFF59E0B,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendations() {
+    if (_recommendations.isEmpty) {
+      return const Center(
+        child: Text('Order more to get personalized recommendations!'),
+      );
+    }
+
+    return Column(
+      children: _recommendations
           .map(
-            (s) => Container(
+            (rec) => Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -168,14 +259,18 @@ class AIInsightsScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(s['icon'] as IconData, size: 28, color: AppColors.primary),
+                  Icon(
+                    rec['icon'] as IconData,
+                    size: 28,
+                    color: Color(rec['color'] as int),
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          s['name'] as String,
+                          rec['name'] as String,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
@@ -183,31 +278,13 @@ class AIInsightsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          s['reason'] as String,
+                          rec['reason'] as String,
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Feature',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ),
                 ],
@@ -217,56 +294,52 @@ class AIInsightsScreen extends StatelessWidget {
           .toList(),
     );
   }
-}
 
-class _InsightCard extends StatelessWidget {
-  final Map<String, dynamic> insight;
-  const _InsightCard({required this.insight});
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = insight['icon'] as IconData;
-    final color = Color(insight['color'] as int);
+  Widget _buildSpendingInsights() {
+    final recentSpent = _spendingInsights['recentSpent'] ?? 0.0;
+    final spendingChange = _spendingInsights['spendingChange'] ?? 0.0;
+    final isPositive = spendingChange >= 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 8)],
-        border: Border(
-          left: BorderSide(color: color, width: 4),
-        ),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 28, color: color),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  insight['title'] as String,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  insight['body'] as String,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+          const Text(
+            'Last 30 Days',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '₹${recentSpent.toStringAsFixed(0)}',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                isPositive ? Icons.trending_up : Icons.trending_down,
+                color: isPositive ? AppColors.success : AppColors.error,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "${spendingChange.abs().toStringAsFixed(1)}% ${isPositive ? 'more' : 'less'} than previous 30 days",
+                style: TextStyle(
+                  color: isPositive ? AppColors.success : AppColors.error,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -274,75 +347,53 @@ class _InsightCard extends StatelessWidget {
   }
 }
 
-class _ReviewInsightCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  const _ReviewInsightCard({required this.data});
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final int color;
+
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final score = data['score'] as double;
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 6)],
+        boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 8)],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Text(
-                data['label'] as String,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+          Icon(icon, size: 32, color: Color(color)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.star_rounded,
-                    color: AppColors.star,
-                    size: 16,
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$score',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: score / 5,
-              backgroundColor: AppColors.divider,
-              valueColor: AlwaysStoppedAnimation(
-                score >= 4.5
-                    ? AppColors.success
-                    : score >= 4.0
-                    ? AppColors.warning
-                    : AppColors.error,
-              ),
-              minHeight: 6,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            data['comment'] as String,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
+                ),
+              ],
             ),
           ),
         ],

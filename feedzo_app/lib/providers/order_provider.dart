@@ -25,7 +25,10 @@ class OrderProvider extends ChangeNotifier {
 
   void init(String customerId) {
     // Prevent duplicate subscriptions for the same customer
-    if (_currentCustomerId == customerId && _ordersSub != null) return;
+    if (_currentCustomerId == customerId && _ordersSub != null) {
+      debugPrint('[OrderProvider] Already initialized with customerId: $customerId');
+      return;
+    }
 
     _ordersSub?.cancel();
     _currentCustomerId = customerId;
@@ -34,13 +37,13 @@ class OrderProvider extends ChangeNotifier {
 
     _ordersSub = FirestoreService.watchCustomerOrders(customerId).listen(
       (data) {
-        debugPrint('[OrderProvider] Received ${data.length} orders');
+        debugPrint('[OrderProvider] Received ${data.length} orders for customerId: $customerId');
         _orders = data;
         _isLoading = false;
         notifyListeners();
       },
       onError: (error) {
-        debugPrint('[OrderProvider] Stream error: $error');
+        debugPrint('[OrderProvider] Stream error for customerId $customerId: $error');
         _isLoading = false;
         _orders = [];
         notifyListeners();

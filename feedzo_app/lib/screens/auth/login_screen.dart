@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/app_transitions.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -58,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Image.asset('assets/logo.png', width: 80, height: 80),
                       ),
                       const SizedBox(height: 12),
-                      const Text('Feedzo', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      const Text('BiteGo', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
                       const Text('Delicious food, delivered fast', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
                     ],
                   ),
@@ -108,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: GestureDetector(
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                      AppTransitions.fadeSlide(const ForgotPasswordScreen()),
                     ),
                     child: const Text(
                       'Forgot Password?',
@@ -137,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text("Don't have an account? ", style: TextStyle(color: AppColors.textSecondary)),
                     GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen())),
+                      onTap: () => Navigator.push(context, AppTransitions.fadeSlide(const SignupScreen())),
                       child: const Text('Sign Up', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
                     ),
                   ],

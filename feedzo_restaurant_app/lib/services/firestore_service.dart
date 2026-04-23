@@ -7,6 +7,7 @@ class FirestoreService {
   static CollectionReference get restaurants => _db.collection('restaurants');
   static CollectionReference get users => _db.collection('users');
   static CollectionReference get transactions => _db.collection('transactions');
+  static CollectionReference get drivers => _db.collection('drivers');
 
   // ── Restaurant profile ────────────────────────────────────────────────────
   static Future<void> createRestaurant({
@@ -57,4 +58,18 @@ class FirestoreService {
           .where('restaurantId', isEqualTo: restaurantId)
           .orderBy('createdAt', descending: true)
           .snapshots();
+
+  // ── Driver Location Tracking ──────────────────────────────────────────────
+  static Stream<Map<String, double>?> watchDriverLocation(String driverId) =>
+      drivers.doc(driverId).snapshots().map((doc) {
+        if (!doc.exists) return null;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return null;
+        final loc = data['location'] as Map<String, dynamic>?;
+        if (loc == null) return null;
+        return {
+          'lat': (loc['lat'] as num?)?.toDouble() ?? 0,
+          'lng': (loc['lng'] as num?)?.toDouble() ?? 0,
+        };
+      });
 }

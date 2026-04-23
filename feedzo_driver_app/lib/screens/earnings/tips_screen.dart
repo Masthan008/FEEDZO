@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class TipsScreen extends StatefulWidget {
   const TipsScreen({super.key});
@@ -11,6 +14,15 @@ class TipsScreen extends StatefulWidget {
 class _TipsScreenState extends State<TipsScreen> {
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final driverId = authProvider.driverId;
+
+    if (driverId == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tips Received'),
@@ -19,6 +31,7 @@ class _TipsScreenState extends State<TipsScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('tips')
+            .where('driverId', isEqualTo: driverId)
             .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {

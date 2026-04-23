@@ -8,6 +8,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/quantity_control.dart';
+import '../../widgets/app_transitions.dart';
 import '../../services/firestore_service.dart';
 import '../../services/razorpay_service.dart';
 import '../orders/order_tracking_screen.dart';
@@ -26,6 +27,8 @@ class _CartScreenState extends State<CartScreen> {
   bool _orderPlaced = false;
   String _paymentType = 'cod'; // 'cod' or 'online'
   String? _placedOrderId; // Stores the orderId for navigation after overlay
+  bool _isScheduled = false;
+  DateTime? _scheduledDateTime;
 
   @override
   void initState() {
@@ -126,9 +129,7 @@ class _CartScreenState extends State<CartScreen> {
       if (context.mounted && _placedOrderId != null) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-            builder: (_) => OrderTrackingScreen(orderId: _placedOrderId!),
-          ),
+          AppTransitions.fadeSlide(OrderTrackingScreen(orderId: _placedOrderId!)),
           (route) => route.isFirst,
         );
       }
@@ -364,9 +365,7 @@ class _CartScreenState extends State<CartScreen> {
                 TextButton(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddressManagementScreen(),
-                    ),
+                    AppTransitions.fadeSlide(const AddressManagementScreen()),
                   ),
                   child: const Text('Change/Add'),
                 ),
@@ -410,6 +409,28 @@ class _CartScreenState extends State<CartScreen> {
 
             // ── Delivery Instructions ─────────────────────
             _DeliveryInstructionsSection(cart: cart),
+            const SizedBox(height: 12),
+
+            // ── Schedule Order ─────────────────────────
+            _ScheduleOrderSection(
+              isScheduled: _isScheduled,
+              scheduledDateTime: _scheduledDateTime,
+              onToggle: (value) {
+                setState(() {
+                  _isScheduled = value;
+                  if (!value) {
+                    _scheduledDateTime = null;
+                    cart.setScheduledFor(null);
+                  }
+                });
+              },
+              onDateTimeSelected: (dateTime) {
+                setState(() {
+                  _scheduledDateTime = dateTime;
+                  cart.setScheduledFor(dateTime);
+                });
+              },
+            ),
             const SizedBox(height: 12),
 
             // ── Tip for the Delivery Partner ──────────────
@@ -1368,6 +1389,145 @@ class _CouponSectionState extends State<_CouponSection> {
                   ),
                 ),
               ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Schedule Order Section ───────────────────────────────────────────────────
+class _ScheduleOrderSection extends StatefulWidget {
+  final bool isScheduled;
+  final DateTime? scheduledDateTime;
+  final Function(bool) onToggle;
+  final Function(DateTime) onDateTimeSelected;
+
+  const _ScheduleOrderSection({
+    required this.isScheduled,
+    required this.scheduledDateTime,
+    required this.onToggle,
+    required this.onDateTimeSelected,
+  });
+
+  @override
+  State<_ScheduleOrderSection> createState() => _ScheduleOrderSectionState();
+}
+
+class _ScheduleOrderSectionState extends State<_ScheduleOrderSection> {
+  bool _isExpanded = false;
+
+  Future<void> _selectDateTime() async {
+    final now = DateTime.now();
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: widget.scheduledDateTime ?? now.add(const Duration(hours: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 30)),
+    );
+
+    if (selectedDate != null && mounted) {
+      final selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(
+          widget.scheduledDateTime ?? now.add(const Duration(hours: 1)),
+        ),
+      );
+
+      if (selectedTime != null) {
+        final scheduledDateTime = DateTime(
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day,
+          selectedTime.hour,
+          selectedTime.minute,
+        );
+
+        // Ensure scheduled time is at least 1 hour in the future
+        if (scheduledDateTime.isBefore(now.add(const Duration(hours: 1)))) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please schedule at least 1 hour in advance'),
+              ),
+            );
+          }
+          return;
+        }
+
+        widget.onDateTimeSelected(scheduledDateTime);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 22,
+                  color: widget.isScheduled ? const Color(0xFF16A34A) : const Color(0xFF9CA3AF),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Schedule Order',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: widget.isScheduled,
+                  onChanged: widget.onToggle,
+                  activeColor: const Color(0xFF16A34A),
+                ),
+              ],
+            ),
+          ),
+          if (_isExpanded && widget.isScheduled) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _selectDateTime,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 20, color: Color(0xFF6B7280)),
+                    const SizedBox(width: 12),
+                    Text(
+                      widget.scheduledDateTime != null
+                          ? '${widget.scheduledDateTime!.day}/${widget.scheduledDateTime!.month}/${widget.scheduledDateTime!.year} at ${widget.scheduledDateTime!.hour}:${widget.scheduledDateTime!.minute.toString().padLeft(2, '0')}'
+                          : 'Select date and time',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF9CA3AF)),
+                  ],
+                ),
+              ),
             ),
           ],
         ],

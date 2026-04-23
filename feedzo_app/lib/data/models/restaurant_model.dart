@@ -14,6 +14,9 @@ class Restaurant {
   final List<String> tags;
   final List<MenuItem> menu;
   final bool isRecommended;
+  final List<String> dietaryOptions;
+  final List<String> offers;
+  final double averagePrice;
 
   const Restaurant({
     required this.id,
@@ -29,8 +32,11 @@ class Restaurant {
     required this.isOpen,
     required this.address,
     required this.tags,
-    this.menu = const [],
+    required this.menu,
     this.isRecommended = false,
+    this.dietaryOptions = const [],
+    this.offers = const [],
+    this.averagePrice = 0.0,
   });
 
   factory Restaurant.fromMap(Map<String, dynamic> map, String id) {
@@ -53,6 +59,9 @@ class Restaurant {
       isOpen: map['isOpen'] == null || map['isOpen'] == true || map['isOpen'] == 'true',
       address: map['address']?.toString() ?? '',
       tags: map['tags'] is List ? List<String>.from(map['tags']) : [],
+      dietaryOptions: map['dietaryOptions'] is List ? List<String>.from(map['dietaryOptions']) : [],
+      offers: map['offers'] is List ? List<String>.from(map['offers']) : [],
+      averagePrice: double.tryParse(map['averagePrice']?.toString() ?? '0.0') ?? 0.0,
       menu: map['menu'] is List
           ? (map['menu'] as List)
               .whereType<Map<String, dynamic>>()
@@ -77,6 +86,9 @@ class Restaurant {
       'isOpen': isOpen,
       'address': address,
       'tags': tags,
+      'dietaryOptions': dietaryOptions,
+      'offers': offers,
+      'averagePrice': averagePrice,
       'menu': menu.map((m) => m.toMap()..['id'] = m.id).toList(),
     };
   }

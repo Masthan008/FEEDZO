@@ -11,6 +11,7 @@ import 'providers/order_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/hike_charges_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/waiting_approval_screen.dart';
 import 'screens/home/home_shell.dart';
@@ -33,7 +34,7 @@ Future<void> main() async {
     },
   );
 
-  runApp(const FeedzoRestaurantApp());
+  runApp(const BiteGoRestaurantApp());
 }
 
 /// Handle navigation when user taps notification
@@ -72,8 +73,8 @@ void _handleNotificationNavigation(String type, Map<String, dynamic>? data) {
   }
 }
 
-class FeedzoRestaurantApp extends StatelessWidget {
-  const FeedzoRestaurantApp({super.key});
+class BiteGoRestaurantApp extends StatelessWidget {
+  const BiteGoRestaurantApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -84,14 +85,18 @@ class FeedzoRestaurantApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MenuProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => HikeChargesProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: ResponsiveBuilder(
-        builder: (context, info) => MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'Feedzo Restaurant',
-          debugShowCheckedModeBanner: false,
-          theme: appTheme(),
-          home: const _AuthGate(),
+      child: Consumer<ThemeProvider>(
+        builder: (_, themeProvider, __) => ResponsiveBuilder(
+          builder: (context, info) => MaterialApp(
+            navigatorKey: navigatorKey,
+            title: 'BiteGo Restaurant',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeProvider.mode,
+            home: const _AuthGate(),
           routes: {
             '/hike-charges': (context) => const HikeChargesScreen(),
           },

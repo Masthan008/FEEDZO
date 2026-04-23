@@ -8,6 +8,7 @@ import '../../providers/restaurant_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/restaurant_card.dart';
+import '../../widgets/app_transitions.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../../providers/location_provider.dart';
 import 'dart:async';
@@ -183,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: GestureDetector(
                   onTap: () => Navigator.push(
                     context,
-                    PageRouteBuilder(pageBuilder: (_, __, ___) => const SearchScreen()),
+                    AppTransitions.fadeSlide(const SearchScreen()),
                   ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -261,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // 'Meals under 250' specialized card
               GestureDetector(
-                onTap: () => Navigator.push(context, PageRouteBuilder(pageBuilder: (_, __, ___) => const SearchScreen(initialQuery: 'Meals under 250'))),
+                onTap: () => Navigator.push(context, AppTransitions.fadeSlide(SearchScreen(initialQuery: 'Meals under 250'))),
                 child: Container(
                   width: 90,
                   margin: const EdgeInsets.only(right: 12),
@@ -285,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ...categories.map((c) => Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: GestureDetector(
-                  onTap: () => Navigator.push(context, PageRouteBuilder(pageBuilder: (_, __, ___) => SearchScreen(initialQuery: c['name']!))),
+                  onTap: () => Navigator.push(context, AppTransitions.fadeSlide(SearchScreen(initialQuery: c['name']!))),
                   child: Column(
                     children: [
                       CircleAvatar(
@@ -510,9 +511,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openRestaurant(BuildContext context, String id) {
     Navigator.push(
       context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => RestaurantScreen(restaurantId: id),
-      ),
+      AppTransitions.fadeSlide(RestaurantScreen(restaurantId: id)),
     );
   }
 }

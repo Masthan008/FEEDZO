@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme.dart';
 import '../../models/order_model.dart';
+import '../../services/firestore_service.dart';
 
 class DriverTrackingScreen extends StatefulWidget {
   final OrderModel order;
@@ -36,25 +36,16 @@ class _DriverTrackingScreenState extends State<DriverTrackingScreen> {
                 ],
               ),
             )
-          : StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('drivers')
-                  .doc(driverId)
-                  .snapshots(),
+          : StreamBuilder<Map<String, double>?>(
+              stream: FirestoreService.watchDriverLocation(driverId),
               builder: (context, snapshot) {
                 LatLng driverPos = LatLng(12.9716, 77.5946); // Default
 
-                if (snapshot.hasData && snapshot.data!.exists) {
-                  final data = snapshot.data!.data() as Map<String, dynamic>?;
-                  if (data != null) {
-                    final loc = data['location'] as Map<String, dynamic>?;
-                    if (loc != null) {
-                      final lat = (loc['lat'] as num?)?.toDouble();
-                      final lng = (loc['lng'] as num?)?.toDouble();
-                      if (lat != null && lng != null && lat != 0 && lng != 0) {
-                        driverPos = LatLng(lat, lng);
-                      }
-                    }
+                if (snapshot.hasData && snapshot.data != null) {
+                  final lat = snapshot.data!['lat'];
+                  final lng = snapshot.data!['lng'];
+                  if (lat != null && lng != null && lat != 0 && lng != 0) {
+                    driverPos = LatLng(lat, lng);
                   }
                 }
 
@@ -168,19 +159,19 @@ class _DriverTrackingScreenState extends State<DriverTrackingScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: snapshot.hasData && snapshot.data!.exists
+                                  color: snapshot.hasData && snapshot.data != null
                                       ? Colors.green.shade50
                                       : Colors.orange.shade50,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  snapshot.hasData && snapshot.data!.exists
+                                  snapshot.hasData && snapshot.data != null
                                       ? '● Live'
                                       : '○ Offline',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: snapshot.hasData && snapshot.data!.exists
+                                    color: snapshot.hasData && snapshot.data != null
                                         ? Colors.green.shade700
                                         : Colors.orange.shade700,
                                   ),

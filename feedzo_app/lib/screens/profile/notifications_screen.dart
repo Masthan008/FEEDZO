@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_helper.dart';
+import '../../widgets/app_transitions.dart';
 import '../orders/order_tracking_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -99,10 +100,8 @@ class NotificationsScreen extends StatelessWidget {
                         if (orderId != null) {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  OrderTrackingScreen(orderId: orderId),
-                            ),
+                            AppTransitions.fadeSlide(
+                                OrderTrackingScreen(orderId: orderId)),
                           );
                         }
                       },

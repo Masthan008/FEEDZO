@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/app_transitions.dart';
 import 'phone_login_screen.dart';
 import 'login_screen.dart';
 
@@ -118,9 +119,7 @@ class AuthGatewayScreen extends StatelessWidget {
                         textColor: Colors.white,
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const PhoneLoginScreen(),
-                          ),
+                          AppTransitions.fadeSlide(const PhoneLoginScreen()),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -194,9 +193,7 @@ class AuthGatewayScreen extends StatelessWidget {
                         child: GestureDetector(
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
-                            ),
+                            AppTransitions.fadeSlide(const LoginScreen()),
                           ),
                           child: const Text(
                             'Continue with Email',

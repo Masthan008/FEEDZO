@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/restaurant_provider.dart';
 import '../../widgets/restaurant_card.dart';
+import '../../widgets/app_transitions.dart';
 import '../restaurant/restaurant_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -84,13 +85,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       restaurant: rp.restaurants[i],
                       onTap: () => Navigator.push(
                         context,
-                        PageRouteBuilder(
-                          pageBuilder: (_, __, ___) => RestaurantScreen(
-                              restaurantId: rp.restaurants[i].id),
-                          transitionsBuilder: (_, anim, __, child) =>
-                              FadeTransition(opacity: anim, child: child),
-                          transitionDuration: AppConstants.animPageTransition,
-                        ),
+                        AppTransitions.fadeSlide(RestaurantScreen(
+                            restaurantId: rp.restaurants[i].id)),
                       ),
                     ),
                   ),

@@ -215,4 +215,108 @@ class AppTheme {
               borderRadius: BorderRadius.circular(AppShape.radiusXL)),
         ),
       );
+
+  static ThemeData darkTheme = _buildDark();
+
+  static ThemeData _buildDark() => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.dark(
+          primary: AppColors.primary,
+          secondary: AppColors.accent,
+          surface: AppColors.darkSurface,
+          background: AppColors.darkBackground,
+          onSurface: AppColors.darkTextPrimary,
+        ),
+        scaffoldBackgroundColor: AppColors.darkBackground,
+        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.darkSurface,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          foregroundColor: Colors.white,
+          centerTitle: true,
+          titleTextStyle: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppShape.radiusMedium)),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle:
+                GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppShape.radiusMedium)),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.darkSurfaceVariant,
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppShape.radiusMedium),
+              borderSide: BorderSide.none),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppShape.radiusMedium),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          hintStyle: GoogleFonts.inter(color: AppColors.darkTextSecondary),
+        ),
+        cardTheme: CardThemeData(
+          color: AppColors.darkSurface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppShape.radiusLarge),
+            side: BorderSide(color: AppColors.darkTextSecondary.withValues(alpha: 0.2)),
+          ),
+          margin: EdgeInsets.zero,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: AppColors.darkSurface,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.darkTextSecondary,
+          type: BottomNavigationBarType.fixed,
+          elevation: 12,
+          selectedLabelStyle:
+              GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600),
+          unselectedLabelStyle:
+              GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w400),
+        ),
+        tabBarTheme: TabBarThemeData(
+          indicatorColor: AppColors.primary,
+          labelColor: Colors.white,
+          unselectedLabelColor: AppColors.darkTextSecondary,
+          labelStyle:
+              GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+          unselectedLabelStyle:
+              GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.darkSurface,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppShape.radiusMedium)),
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: AppColors.darkSurface,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppShape.radiusXL)),
+        ),
+        dividerTheme: DividerThemeData(color: AppColors.darkSurfaceVariant),
+      );
 }

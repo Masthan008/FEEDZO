@@ -1,6 +1,6 @@
 {
-    "name": "feedzo_admin",
-    "short_name": "feedzo_admin",
+    "name": "BiteGo Admin",
+    "short_name": "BiteGo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

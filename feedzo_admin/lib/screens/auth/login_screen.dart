@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'Feedzo Admin',
+                    'BiteGo Admin',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 32,
@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       onSubmitted: (_) => _login(),
                       decoration: const InputDecoration(
-                        hintText: 'admin@feedzo.com',
+                        hintText: 'admin@bitego.com',
                         prefixIcon: Icon(
                           Icons.email_outlined,
                           size: 18,

@@ -155,35 +155,8 @@ class OrderProvider extends ChangeNotifier {
         'acceptedAt': FieldValue.serverTimestamp(),
       };
 
-      // Quick logic: auto assign driver if online/available
-      debugPrint('[OrderProvider] Querying for online/available drivers for order $orderId');
-      final drivers = await FirebaseFirestore.instance
-          .collection('drivers')
-          .where('status', whereIn: ['online', 'available'])
-          .get();
-
-      debugPrint('[OrderProvider] Found ${drivers.docs.length} drivers with status online/available');
-
-      if (drivers.docs.isNotEmpty) {
-        final doc = drivers.docs.first;
-        final driverId = doc.id;
-        final data = doc.data();
-
-        debugPrint('[OrderProvider] Assigning driver $driverId (${data['name']}) to order $orderId');
-
-        dbData['driverId'] = driverId;
-        dbData['driverName'] = data['name'] ?? 'Driver';
-        dbData['driverPhone'] = data['phone'] ?? '';
-
-        final driverRef = FirebaseFirestore.instance.collection('drivers').doc(driverId);
-        batch.update(driverRef, {
-          'status': 'busy',
-          'currentOrderId': orderId,
-          'activeOrderIds': FieldValue.arrayUnion([orderId]),
-        });
-      } else {
-        debugPrint('[OrderProvider] No online/available drivers found for order $orderId');
-      }
+      // Removed auto-assignment logic - drivers will accept orders from their Available tab
+      debugPrint('[OrderProvider] Order $orderId accepted, waiting for driver to accept');
 
       batch.update(orderRef, dbData);
       await batch.commit();

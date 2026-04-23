@@ -241,6 +241,8 @@ class _IncentiveCard extends StatelessWidget {
     final type = d['type'] ?? 'bonus';
     final isActive = d['isActive'] ?? true;
     final amount = (d['amount'] as num?)?.toDouble() ?? 0;
+    final totalPaid = (d['totalPaid'] as num?)?.toDouble() ?? 0;
+    final qualifiedDrivers = (d['qualifiedDrivers'] as int?) ?? 0;
 
     final typeColor = type == 'peak_pay'
         ? AppColors.warning
@@ -342,6 +344,159 @@ class _IncentiveCard extends StatelessWidget {
                 onPressed: onDelete,
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          // Stats row
+          Row(
+            children: [
+              _StatChip(
+                label: 'Qualified',
+                value: qualifiedDrivers.toString(),
+                color: AppColors.info,
+              ),
+              const SizedBox(width: 8),
+              _StatChip(
+                label: 'Paid',
+                value: '₹${totalPaid.toStringAsFixed(0)}',
+                color: AppColors.success,
+              ),
+              const Spacer(),
+              if (isActive)
+                TextButton.icon(
+                  onPressed: () => _calculateIncentives(context, doc),
+                  icon: const Icon(Icons.calculate, size: 16),
+                  label: const Text('Calculate'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _calculateIncentives(BuildContext context, QueryDocumentSnapshot doc) async {
+    final d = doc.data() as Map<String, dynamic>;
+    final type = d['type'] ?? 'bonus';
+    final amount = (d['amount'] as num?)?.toDouble() ?? 0;
+    final targetOrders = (d['targetOrders'] as int?) ?? 5;
+    final db = FirebaseFirestore.instance;
+
+    try {
+      // Get all drivers
+      final drivers = await db.collection('drivers').get();
+      int qualifiedCount = 0;
+      double totalPayout = 0;
+
+      for (final driver in drivers.docs) {
+        final driverId = driver.id;
+        
+        // Calculate based on incentive type
+        bool qualified = false;
+        
+        if (type == 'peak_pay') {
+          // Peak pay: check if driver is online during peak hours
+          final driverData = driver.data() as Map<String, dynamic>;
+          qualified = driverData['isOnline'] == true;
+        } else if (type == 'challenge') {
+          // Challenge: check if driver completed target orders this month
+          final now = DateTime.now();
+          final oneMonthAgo = DateTime(now.year, now.month - 1, now.day);
+          
+          final orders = await db
+              .collection('orders')
+              .where('driverId', isEqualTo: driverId)
+              .where('status', isEqualTo: 'delivered')
+              .where('deliveredAt', isGreaterThan: oneMonthAgo)
+              .get();
+          
+          qualified = orders.docs.length >= targetOrders;
+        } else {
+          // Bonus: all active drivers qualify
+          final driverData = driver.data() as Map<String, dynamic>;
+          qualified = driverData['isActive'] == true;
+        }
+
+        if (qualified) {
+          qualifiedCount++;
+          totalPayout += amount;
+          
+          // Add to driver earnings
+          await db.collection('driverEarnings').doc(driverId).set({
+            'incentiveAmount': FieldValue.increment(amount),
+            'totalEarnings': FieldValue.increment(amount),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      }
+
+      // Update incentive stats
+      await doc.reference.update({
+        'qualifiedDrivers': qualifiedCount,
+        'totalPaid': FieldValue.increment(totalPayout),
+        'lastCalculatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Calculated: $qualifiedCount drivers qualified, ₹${totalPayout.toStringAsFixed(0)} distributed'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error calculating incentives: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontSize: 11,
+              color: color.withValues(alpha: 0.8),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
         ],
       ),

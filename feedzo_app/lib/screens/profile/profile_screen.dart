@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../../widgets/app_transitions.dart';
 
 import 'address_management_screen.dart';
 import 'help_support_screen.dart';
@@ -247,9 +248,7 @@ class ProfileScreen extends StatelessWidget {
                   label: 'Add New Address',
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddressManagementScreen(),
-                    ),
+                    AppTransitions.fadeSlide(const AddressManagementScreen()),
                   ),
                 ),
               ],
@@ -266,9 +265,7 @@ class ProfileScreen extends StatelessWidget {
                   label: 'Notifications',
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationsScreen(),
-                    ),
+                    AppTransitions.fadeSlide(const NotificationsScreen()),
                   ),
                 ),
                 // Dark mode toggle
@@ -326,9 +323,7 @@ class ProfileScreen extends StatelessWidget {
                   label: 'Help & Support',
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const HelpSupportScreen(),
-                    ),
+                    AppTransitions.fadeSlide(const HelpSupportScreen()),
                   ),
                 ),
                 _SettingsItem(
@@ -338,11 +333,11 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 _SettingsItem(
                   icon: Icons.info_outline_rounded,
-                  label: 'About Feedzo',
+                  label: 'About BiteGo',
                   onTap: () {
                     showAboutDialog(
                       context: context,
-                      applicationName: 'Feedzo',
+                      applicationName: 'BiteGo',
                       applicationVersion: '1.0.0',
                       applicationIcon: Image.asset(
                         'assets/logo.png',
@@ -350,7 +345,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       children: [
                         const Text(
-                          'Feedzo is your smart food delivery companion powered by AI.',
+                          'BiteGo is your smart food delivery companion powered by AI.'
                         ),
                       ],
                     );
@@ -372,7 +367,7 @@ class ProfileScreen extends StatelessWidget {
                   subtitle: 'Points, tiers & rewards',
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const LoyaltyScreen()),
+                    AppTransitions.fadeSlide(const LoyaltyScreen()),
                   ),
                 ),
                 _SettingsItem(
@@ -382,9 +377,7 @@ class ProfileScreen extends StatelessWidget {
                   subtitle: 'GDPR & data controls',
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const PrivacySettingsScreen(),
-                    ),
+                    AppTransitions.fadeSlide(const PrivacySettingsScreen()),
                   ),
                 ),
       _SettingsItem(
@@ -394,7 +387,7 @@ class ProfileScreen extends StatelessWidget {
         subtitle: 'Communication controls',
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const MarketingPreferencesScreen()),
+          AppTransitions.fadeSlide(const MarketingPreferencesScreen()),
         ),
       ),
 
@@ -679,7 +672,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               SizedBox(height: 16),
               Text(
-                'At Feedzo, we value your privacy and are committed to protecting your personal data.\n\n'
+                'At BiteGo, we value your privacy and are committed to protecting your personal data.\n\n'
                 '1. Information We Collect\n'
                 'We collect information you provide directly: name, email, phone number, delivery addresses, and order history.\n\n'
                 '2. How We Use Your Information\n'

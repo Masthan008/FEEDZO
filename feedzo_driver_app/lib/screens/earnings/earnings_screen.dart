@@ -121,7 +121,7 @@ class _EarningsScreenState extends State<EarningsScreen>
                   if (amount <= 0) return;
                   Navigator.pop(context);
 
-                  await _settlementService.submitCash(amount);
+                  await SettlementService.submitCash(_uid, amount, '');
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

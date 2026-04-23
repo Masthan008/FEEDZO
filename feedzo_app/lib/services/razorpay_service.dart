@@ -17,7 +17,7 @@ class RazorpayService {
     required String customerName,
     required String customerEmail,
     required String customerPhone,
-    String description = 'Feedzo Food Order',
+    String description = 'BiteGo Food Order',
   }) async {
     // Amount in paise (INR × 100)
     final amountInPaise = (amount * 100).toInt();
@@ -25,7 +25,7 @@ class RazorpayService {
     final options = {
       'key': _apiKey,
       'amount': amountInPaise,
-      'name': 'Feedzo',
+      'name': 'BiteGo',
       'description': description,
       'order_id': '', // Set from Razorpay server-side order if available
       'prefill': {

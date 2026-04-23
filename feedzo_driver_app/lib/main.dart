@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/responsive.dart';
+import 'providers/theme_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'widgets/approval_gate.dart';
@@ -16,29 +18,36 @@ Future<void> main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await OneSignalService.init();
-  runApp(const FeedzoDriverApp());
+  runApp(const BiteGoDriverApp());
 }
 
-class FeedzoDriverApp extends StatelessWidget {
-  const FeedzoDriverApp({super.key});
+class BiteGoDriverApp extends StatelessWidget {
+  const BiteGoDriverApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, info) => MaterialApp(
-        title: 'Feedzo Driver',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: const _AuthGate(),
-        builder: (context, child) {
-          // Ensure text scaling doesn't break layout
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
-            ),
-            child: child!,
-          );
-        },
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: ResponsiveBuilder(
+        builder: (context, info) => Consumer<ThemeProvider>(
+          builder: (_, theme, __) => MaterialApp(
+            title: 'BiteGo Driver',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: theme.mode,
+            home: const _AuthGate(),
+            builder: (context, child) {
+              // Ensure text scaling doesn't break layout
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
+                ),
+                child: child!,
+              );
+            },
+          ),
+        ),
       ),
     );
   }

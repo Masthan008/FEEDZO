@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/split_payment_model.dart';
 import '../../services/split_payment_service.dart';
+import '../../services/razorpay_service.dart';
+import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class SplitPaymentScreen extends StatefulWidget {
   final double totalAmount;
@@ -245,8 +248,57 @@ class _SplitPaymentScreenState extends State<SplitPaymentScreen> {
     });
   }
 
-  void _confirmSplitPayment() {
-    // Create split payment and send invitations
-    Navigator.pop(context, _splits);
+  void _confirmSplitPayment() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to continue')),
+      );
+      return;
+    }
+
+    // Process each split payment with Razorpay
+    for (final split in _splits) {
+      if (split.paymentMethod == 'card' && split.amount > 0) {
+        try {
+          final paymentId = await RazorpayService.openCheckout(
+            amount: split.amount,
+            orderId: 'SPLIT-${DateTime.now().millisecondsSinceEpoch}',
+            customerName: split.userName,
+            customerEmail: split.userEmail,
+            customerPhone: user.phoneNumber ?? '',
+            description: 'Split payment for Feedzo order',
+          );
+          
+          // Update split status to paid
+          split.copyWith(status: 'paid', paymentId: paymentId);
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Payment failed for ${split.userName}: $e')),
+          );
+          return;
+        }
+      }
+    }
+
+    // Create split payment record in Firestore
+    try {
+      await SplitPaymentService.createSplitPayment(
+        orderId: 'SPLIT-${DateTime.now().millisecondsSinceEpoch}',
+        totalAmount: widget.totalAmount,
+        splits: _splits,
+      );
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Split payment created successfully!')),
+      );
+      Navigator.pop(context, _splits);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating split payment: $e')),
+      );
+    }
   }
 }

@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'core/theme.dart';
 import 'core/responsive.dart';
 import 'providers/admin_provider.dart';
+import 'providers/theme_provider.dart';
 import 'shell.dart';
 import 'screens/auth/login_screen.dart';
 
@@ -18,31 +19,37 @@ Future<void> main() async {
   if (!kIsWeb) {
     OneSignal.initialize('90f7c5c6-b51f-466a-acdb-a4829b419363');
   }
-  runApp(const FeedzoAdminApp());
+  runApp(const BiteGoAdminApp());
 }
 
-class FeedzoAdminApp extends StatelessWidget {
-  const FeedzoAdminApp({super.key});
+class BiteGoAdminApp extends StatelessWidget {
+  const BiteGoAdminApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AdminProvider(),
-      child: ResponsiveBuilder(
-        builder: (context, info) => MaterialApp(
-          title: 'Feedzo Admin',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          home: const _AuthGate(),
-          builder: (context, child) {
-            // Ensure text scaling doesn't break layout
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
-              ),
-              child: child!,
-            );
-          },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (_, themeProvider, __) => ResponsiveBuilder(
+          builder: (context, info) => MaterialApp(
+            title: 'BiteGo Admin',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeProvider.mode,
+            home: const _AuthGate(),
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(info.textScale.clamp(0.8, 1.2)),
+                ),
+                child: child!,
+              );
+            },
+          ),
         ),
       ),
     );

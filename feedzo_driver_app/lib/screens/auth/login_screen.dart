@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Image.asset('assets/logo.png', width: 80, height: 80),
               ),
               const SizedBox(height: 24),
-              const Text('Feedzo Driver', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              const Text('BiteGo Driver', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
               const Text('Deliver with confidence', style: TextStyle(fontSize: 15, color: Colors.grey)),
               const SizedBox(height: 48),
               if (_error != null) ...[

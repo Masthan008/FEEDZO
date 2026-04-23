@@ -21,8 +21,41 @@ class ChatService {
     });
   }
 
-  static Future<String> sendMessage(ChatMessageModel message) async {
-    final docRef = await _chats.add(message.toMap());
+  static Stream<List<ChatMessageModel>> watchChatBetweenUsers(String userId1, String userId2) {
+    return _chats
+        .where(Filter.or(
+          Filter.and(Filter('senderId', isEqualTo: userId1), Filter('recipientId', isEqualTo: userId2)),
+          Filter.and(Filter('senderId', isEqualTo: userId2), Filter('recipientId', isEqualTo: userId1)),
+        ))
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) {
+      return snap.docs.map((doc) => ChatMessageModel.fromFirestore(doc)).toList();
+    });
+  }
+
+  static Future<String> sendMessage({
+    required String senderId,
+    required String senderName,
+    required String senderType,
+    required String recipientId,
+    required String recipientName,
+    required String recipientType,
+    required String message,
+  }) async {
+    final chatMessage = ChatMessageModel(
+      id: '',
+      senderId: senderId,
+      senderName: senderName,
+      senderType: senderType,
+      recipientId: recipientId,
+      recipientName: recipientName,
+      recipientType: recipientType,
+      message: message,
+      createdAt: DateTime.now(),
+      isRead: false,
+    );
+    final docRef = await _chats.add(chatMessage.toMap());
     return docRef.id;
   }
 

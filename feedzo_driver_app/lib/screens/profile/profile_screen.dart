@@ -17,6 +17,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploading = false;
   bool _isSaving = false;
+  bool _isAvailable = true;
+  double _coverageRadius = 5.0;
   final _vehicleController = TextEditingController();
   final _driverIdController = TextEditingController();
   String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -35,6 +37,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await FirebaseFirestore.instance.collection('drivers').doc(_uid).update({
         'vehicle': _vehicleController.text.trim(),
         'driverExternalId': _driverIdController.text.trim(),
+        'isAvailable': _isAvailable,
+        'coverageRadius': _coverageRadius,
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -141,6 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final isApproved = d['isApproved'] as bool? ?? false;
         final imageUrl = d['imageUrl'] as String?;
         final email = FirebaseAuth.instance.currentUser?.email ?? '';
+        final isAvailable = d['isAvailable'] as bool? ?? true;
+        final coverageRadius = (d['coverageRadius'] as num?)?.toDouble() ?? 5.0;
 
         if (_vehicleController.text.isEmpty && vehicle.isNotEmpty) {
           _vehicleController.text = vehicle;
@@ -148,6 +154,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (_driverIdController.text.isEmpty && driverExternalId.isNotEmpty) {
           _driverIdController.text = driverExternalId;
         }
+        _isAvailable = isAvailable;
+        _coverageRadius = coverageRadius;
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -411,6 +419,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: AppColors.primary, width: 2),
                             ),
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Availability Toggle
+                        SwitchListTile(
+                          title: const Text('Available for Orders'),
+                          subtitle: Text(
+                            _isAvailable ? 'You will receive order requests' : 'You won\'t receive orders',
+                          ),
+                          value: _isAvailable,
+                          onChanged: (value) {
+                            setState(() {
+                              _isAvailable = value;
+                            });
+                          },
+                          activeColor: AppColors.primary,
+                        ),
+                        const SizedBox(height: 16),
+                        // Coverage Radius Slider
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Coverage Radius',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  '${_coverageRadius.round()} km',
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Slider(
+                              value: _coverageRadius,
+                              min: 1,
+                              max: 20,
+                              divisions: 19,
+                              label: '${_coverageRadius.round()} km',
+                              activeColor: AppColors.primary,
+                              onChanged: (value) {
+                                setState(() {
+                                  _coverageRadius = value;
+                                });
+                              },
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 24),
                         SizedBox(

@@ -254,16 +254,29 @@ class _PayoutRequestsScreenState extends State<PayoutRequestsScreen> {
             onPressed: () async {
               final amount = double.tryParse(amountController.text);
               if (amount != null && amount > 0) {
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                await PayoutService.requestPayout(
-                  restaurantId: restaurantId,
-                  restaurantName: authProvider.restaurant?.name ?? 'Restaurant',
-                  amount: amount,
-                  bankAccount: bankAccountController.text,
-                  ifscCode: ifscCodeController.text,
-                  accountHolderName: accountHolderNameController.text,
-                );
-                if (mounted) Navigator.pop(context);
+                try {
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  await PayoutService.requestPayout(
+                    restaurantId: restaurantId,
+                    restaurantName: authProvider.restaurant?.name ?? 'Restaurant',
+                    amount: amount,
+                    bankAccount: bankAccountController.text,
+                    ifscCode: ifscCodeController.text,
+                    accountHolderName: accountHolderNameController.text,
+                  );
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Payout request submitted successfully!')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error submitting payout: $e')),
+                    );
+                  }
+                }
               }
             },
             child: const Text('Submit'),
