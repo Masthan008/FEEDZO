@@ -6,6 +6,7 @@ import '../../providers/order_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../data/models/order_model.dart';
 import '../../widgets/app_transitions.dart';
+import '../../widgets/quick_reorder_card.dart';
 import 'order_tracking_screen.dart';
 import 'rate_order_screen.dart';
 

@@ -7,6 +7,7 @@ import '../../services/firestore_service.dart';
 import '../../services/loyalty_service.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_transitions.dart';
+import '../../widgets/order_timeline.dart';
 import 'order_chat_screen.dart';
 import 'rate_order_screen.dart';
 
@@ -119,7 +120,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     _buildInfoBanner(order),
 
                   // ── Order Status Timeline ──
-                  _buildTimeline(order),
+                  OrderTimeline(
+                    status: order.status.toString().split('.').last,
+                    placedAt: order.placedAt,
+                    confirmedAt: order.confirmedAt,
+                    preparingAt: order.preparingAt,
+                    pickedUpAt: order.pickedUpAt,
+                    deliveredAt: order.deliveredAt,
+                  ),
                   const SizedBox(height: 16),
 
                   // ── Restaurant Details ──

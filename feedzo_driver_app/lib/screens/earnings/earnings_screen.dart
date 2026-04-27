@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import '../../core/theme/app_theme.dart';
 import '../../models/earning_model.dart';
 import '../../services/settlement_service.dart';
+import '../../widgets/earnings_chart.dart';
 
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
@@ -359,6 +360,13 @@ class _EarningsTab extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 20),
+          // Weekly earnings chart
+          EarningsChart(
+            earnings: weeklyEarnings,
+            days: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            maxEarning: weeklyEarnings.reduce((a, b) => a > b ? a : b) * 1.2,
           ),
           const SizedBox(height: 20),
           Row(

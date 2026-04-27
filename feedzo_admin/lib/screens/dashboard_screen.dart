@@ -7,6 +7,7 @@ import '../data/models.dart';
 import '../providers/admin_provider.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/topbar.dart';
+import '../widgets/toast_notification.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -18,6 +19,33 @@ class DashboardScreen extends StatelessWidget {
     return Column(
       children: [
         const TopBar(title: 'Dashboard', subtitle: 'Welcome back, Super Admin'),
+        // Toast notification demo button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Row(
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => Toast.success(context, 'Dashboard data refreshed!'),
+                icon: const Icon(Icons.check_circle),
+                label: const Text('Test Success Toast'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: () => Toast.error(context, 'Something went wrong!'),
+                icon: const Icon(Icons.error),
+                label: const Text('Test Error Toast'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('users').snapshots(),

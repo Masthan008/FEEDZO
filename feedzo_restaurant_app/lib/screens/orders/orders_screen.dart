@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../models/order_model.dart';
 import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
+import '../../widgets/prep_timer.dart';
 import 'order_detail_screen.dart';
 import 'driver_tracking_screen.dart';
 
@@ -341,40 +342,19 @@ class _OrderCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Prep timer
+              // Prep timer widget
               if (order.status == OrderStatus.preparing &&
                   order.prepTime != null) ...[
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.orange.shade50,
-                        Colors.amber.shade50,
-                      ],
-                    ),
-                    borderRadius: AppShape.medium,
-                    border: Border.all(color: Colors.orange.shade100),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.timer_rounded,
-                        size: 18,
-                        color: Colors.orange,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Preparing: Ready in ${order.prepTime} mins',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.orange.shade800,
-                        ),
-                      ),
-                    ],
-                  ),
+                PrepTimer(
+                  totalMinutes: order.prepTime!,
+                  remainingMinutes: order.remainingPrepTime ?? order.prepTime!,
+                  onExtend: () {
+                    // Extend prep time by 5 minutes
+                    context.read<OrderProvider>().extendPrepTime(
+                      order.id,
+                      additionalMinutes: 5,
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
               ],
